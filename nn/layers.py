@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
-from .exceptions import InvalidShapeError
+from .exceptions import InvalidShapeError, InvalidParameterException
 from .initializers import RandomUniformInitializer
 
 
@@ -25,11 +25,11 @@ class Layer(ABC):
         self.nn = nn
         self.prev_layer = prev_layer
         self.next_layer = next_layer
-        self.output_shape = self.get_output_shape()
 
         if not self.is_input_shape_valid(self.input_shape):
             raise InvalidShapeError(f'Inferred layer input shape is invalid {self.input_shape}')
 
+        self.output_shape = self.get_output_shape()
         self.initialize()
 
     def propagate_with_validation(self, x):
@@ -177,3 +177,82 @@ class FlattenLayer(Layer):
 
     def backpropagate(self, delta):
         return delta.reshape(*self.input_shape)
+
+
+class Conv1DLayer(Layer):
+
+    def __init__(self, filters_count, kernel_size, padding='zeros', stride=1, dilation=1,
+                 initializer=RandomUniformInitializer()):
+        super().__init__()
+
+        if kernel_size % 2 == 0:
+            raise InvalidParameterException('kernel size must be an odd number')
+
+        self.filters_count = filters_count
+        self.kernel_size = kernel_size
+        self.padding = padding
+        self.stride = stride
+        self.dilation = dilation
+        self.initializer = initializer
+        self.kernels = None
+
+    @property
+    def dilated_kernel_size(self):
+        return (self.kernel_size - 1) * self.dilation + 1
+
+    @property
+    def input_slices_count(self):
+        return self.input_shape[1]
+
+    @property
+    def input_slice_size(self):
+        return self.input_shape[0]
+
+    @property
+    def adjusted_input_slice_size(self):
+        padding_size = self.dilated_kernel_size - 1 if self.padding != 'none' else 0
+        return self.input_slice_size + padding_size
+
+    @property
+    def output_slices_count(self):
+        return self.filters_count
+
+    @property
+    def output_slice_size(self):
+        return (self.adjusted_input_slice_size - self.dilated_kernel_size + 1) // self.stride
+
+    def initialize(self):
+        kwargs = {'layer': self}
+        kernels = [self.initializer((self.kernel_size, self.input_slices_count), **kwargs) for _ in range(self.output_slices_count)]
+        self.kernels = np.array(kernels)
+
+    def is_input_shape_valid(self, input_shape):
+        return len(input_shape) == 2
+
+    def get_output_shape(self):
+        return tuple((self.output_slice_size, self.output_slices_count))
+
+    def propagate(self, x):
+        slices = [self.__conv_with_kernel(x, kernel) for kernel in self.kernels]
+        slices = np.array(slices)
+        output = np.moveaxis(slices, [0, 1], [1, 0])
+        return output
+
+    def backpropagate(self, delta):
+        raise NotImplementedError
+
+    def __conv_with_kernel(self, x, kernel):
+        output = np.zeros((self.output_slice_size,), dtype=x.dtype)
+        positions = [self.dilated_kernel_size // 2 + i * self.stride for i in range(self.output_slice_size)]
+        for index, pos in enumerate(positions):
+            output[index] = self.__conv(x, kernel, pos)
+        return output
+
+    def __conv(self, x, kernel, pos):
+        kernel_half = self.kernel_size // 2
+        result = 0
+        x_indexes = [pos + self.dilation * i for i in range(-kernel_half, kernel_half+1)]
+        for kernel_index, x_index in enumerate(x_indexes):
+            for slice_index in range(self.input_slices_count):
+                result += x[x_index][slice_index] * kernel[kernel_index][slice_index]
+        return result
