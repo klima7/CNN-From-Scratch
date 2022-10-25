@@ -78,7 +78,7 @@ class BinaryNNClassifier(NeuralNetwork):
         return labels
 
     def predict_proba(self, X):
-        output = self.input_layer.propagate(X)
+        output = super().predict(X)
         output = output.flatten()
         nom = np.exp(output)
         denom = np.sum(nom)
@@ -96,7 +96,7 @@ class MulticlassNNClassifier(NeuralNetwork):
         super().fit(X, encoded_Y)
 
     def predict(self, X):
-        output = self.input_layer.propagate(X)
+        output = super().predict(X)
         labels_no = np.argmax(output, axis=1)
         labels = np.take(self.encoder.categories_, labels_no)
         return labels
