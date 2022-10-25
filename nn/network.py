@@ -60,6 +60,12 @@ class NeuralNetwork(BaseEstimator, ClassifierMixin):
     def predict(self, X):
         return self.__propagate(X)
 
+    def summary(self):
+        for layer in self.layers:
+            print(layer)
+            print(f'Shape: {layer.input_shape} -> {layer.output_shape}')
+            print('-'*50)
+
 
 class BinaryNNClassifier(NeuralNetwork):
 

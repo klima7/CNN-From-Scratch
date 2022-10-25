@@ -13,6 +13,9 @@ class Layer(ABC):
         self.next_layer = None
         self.output_shape = None
 
+    def __repr__(self):
+        return self.__class__.__name__
+
     @property
     def input_shape(self):
         return self.prev_layer.output_shape if self.prev_layer else None
@@ -71,6 +74,9 @@ class InputLayer(Layer):
         super().__init__()
         self.shape = shape
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}(shape: {self.shape})'
+
     def is_input_shape_valid(self, input_shape):
         return input_shape is None
 
@@ -92,8 +98,11 @@ class DenseLayer(Layer):
         self.input_data = None
         self.weights = None
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}(neurons_count: {self.neurons_count})'
+
     def is_input_shape_valid(self, input_shape):
-        return input_shape.ndim == 1
+        return len(input_shape) == 1
 
     def get_output_shape(self):
         return tuple((self.neurons_count,))
@@ -125,6 +134,9 @@ class ActivationLayer(Layer):
         super().__init__()
         self.activation = activation
         self.state = None
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}(activation: {self.activation})'
 
     def is_input_shape_valid(self, input_shape):
         return True

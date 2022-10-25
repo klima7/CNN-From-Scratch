@@ -6,6 +6,9 @@ from scipy.special import expit
 
 class Activation(ABC):
 
+    def __repr__(self):
+        return self.__class__.__name__
+
     @abstractmethod
     def call(self, x):
         pass
