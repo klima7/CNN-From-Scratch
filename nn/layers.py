@@ -25,15 +25,14 @@ class Layer(ABC):
         self.prev_layer = prev_layer
         self.next_layer = next_layer
         self.output_shape = self.get_output_shape()
-        print(f'output: {self.output_shape}; input: {self.input_shape}')
 
         if not self.is_input_shape_valid(self.input_shape):
-            raise InvalidShapeError('Inferred layer input shape is invalid')
+            raise InvalidShapeError(f'Inferred layer input shape is invalid {self.input_shape}')
 
         self.initialize()
 
     def propagate_with_validation(self, x):
-        if x.shape != self.input_shape:
+        if self.input_shape and x.shape != self.input_shape:
             raise InvalidShapeError(f'Array with invalid shape passed to propagate method. Should be {self.input_shape}, but is {x.shape}')
         propagated_data = self.propagate(x)
         if propagated_data.shape != self.output_shape:
@@ -77,8 +76,12 @@ class InputLayer(Layer):
     def __repr__(self):
         return f'{self.__class__.__name__}(shape: {self.shape})'
 
+    @property
+    def input_shape(self):
+        return self.output_shape
+
     def is_input_shape_valid(self, input_shape):
-        return input_shape is None
+        return input_shape == self.input_shape
 
     def get_output_shape(self):
         return self.shape
