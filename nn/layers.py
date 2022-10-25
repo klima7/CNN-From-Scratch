@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 
 from .exceptions import InvalidShapeError
+from .initializers import RandomNormalInitializer
 
 
 class Layer(ABC):
@@ -95,14 +96,15 @@ class InputLayer(Layer):
 
 class DenseLayer(Layer):
 
-    def __init__(self, neurons_count):
+    def __init__(self, neurons_count, initializer=RandomNormalInitializer()):
         super().__init__()
         self.neurons_count = neurons_count
+        self.initializer = initializer
         self.input_data = None
         self.weights = None
 
     def __repr__(self):
-        return f'{self.__class__.__name__}(neurons_count: {self.neurons_count})'
+        return f'{self.__class__.__name__}(neurons_count: {self.neurons_count}, initializer: {self.initializer})'
 
     def is_input_shape_valid(self, input_shape):
         return len(input_shape) == 1
@@ -111,7 +113,7 @@ class DenseLayer(Layer):
         return tuple((self.neurons_count,))
 
     def initialize(self):
-        self.weights = np.random.rand(self.neurons_count, self.input_shape[0])
+        self.weights = self.initializer((self.neurons_count, self.input_shape[0]))
 
     def propagate(self, x):
         self.input_data = x
