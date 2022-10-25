@@ -6,12 +6,15 @@ from tqdm import tqdm
 
 class NeuralNetwork(BaseEstimator, ClassifierMixin):
 
-    def __init__(self, layers, epochs=10, learning_rate=0.1, seed=None):
+    DEFAULT_EPOCHS = 10
+    DEFAULT_LEARNING_RATE = 0.01
+
+    def __init__(self, layers):
         self.__connect(layers)
         self.layers = layers
-        self.epochs = epochs
-        self.learning_rate = learning_rate
-        self.seed = seed
+
+        self.epochs = None
+        self.learning_rate = None
 
     def __connect(self, layers):
         for i in range(len(layers)):
@@ -28,9 +31,9 @@ class NeuralNetwork(BaseEstimator, ClassifierMixin):
     def output_layer(self):
         return self.layers[-1]
 
-    def fit(self, X, Y):
-        if self.seed:
-            np.random.seed(self.seed)
+    def fit(self, X, Y, **kwargs):
+        self.epochs = kwargs.get('epochs', self.DEFAULT_EPOCHS)
+        self.learning_rate = kwargs.get('learning_rage', self.DEFAULT_LEARNING_RATE)
 
         for epoch_no in range(self.epochs):
             self.__learn_epoch(X, Y, epoch_no+1)
@@ -66,8 +69,8 @@ class NeuralNetwork(BaseEstimator, ClassifierMixin):
 
 class BinaryNNClassifier(NeuralNetwork):
 
-    def __init__(self, layers, epochs=10, learning_rate=0.1, seed=None):
-        super().__init__(layers, epochs, learning_rate, seed)
+    def __init__(self, layers):
+        super().__init__(layers)
         self.encoder = OneHotEncoder()
 
     def predict(self, X):
@@ -87,13 +90,13 @@ class BinaryNNClassifier(NeuralNetwork):
 
 class MulticlassNNClassifier(NeuralNetwork):
 
-    def __init__(self, layers, epochs=10, learning_rate=0.1, seed=None):
-        super().__init__(layers, epochs, learning_rate, seed)
+    def __init__(self, layers):
+        super().__init__(layers)
         self.encoder = OneHotEncoder()
 
-    def fit(self, X, Y):
+    def fit(self, X, Y, **kwargs):
         encoded_Y = self.encoder.fit_transform(Y.reshape(-1, 1)).toarray()
-        super().fit(X, encoded_Y)
+        super().fit(X, encoded_Y, **kwargs)
 
     def predict(self, X):
         output = super().predict(X)
