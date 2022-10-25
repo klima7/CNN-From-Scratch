@@ -32,21 +32,17 @@ class NeuralNetwork(BaseEstimator, ClassifierMixin):
         if self.seed:
             np.random.seed(self.seed)
 
-        for i in range(self.epochs):
+        for i in tqdm(range(self.epochs)):
             self.__learn_epoch(X, Y)
 
     def __learn_epoch(self, X, Y):
         for x, y in zip(X, Y):
-            self.__learn_single(x.reshape(1, -1), y.reshape(1, -1))
+            self.__learn_single(x, y)
 
     def __learn_single(self, x, y):
         prediction = self.__propagate(x)
         delta = y - prediction
         self.__backpropagate(delta)
-
-        prediction = self.input_layer.propagate_val(x)
-        delta = y - prediction
-        self.output_layer.backpropagate_val(delta)
 
     def __propagate(self, x):
         for layer in self.layers:
@@ -58,7 +54,8 @@ class NeuralNetwork(BaseEstimator, ClassifierMixin):
             delta = layer.backpropagate_with_validation(delta)
 
     def predict(self, X):
-        return self.__propagate(X)
+        predictions = [self.__propagate(x) for x in X]
+        return np.array(predictions)
 
     def summary(self):
         for layer in self.layers:

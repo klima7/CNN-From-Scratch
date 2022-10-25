@@ -32,7 +32,7 @@ class Layer(ABC):
         self.initialize()
 
     def propagate_with_validation(self, x):
-        if self.input_shape and x.shape != self.input_shape:
+        if x.shape != self.input_shape:
             raise InvalidShapeError(f'Array with invalid shape passed to propagate method. Should be {self.input_shape}, but is {x.shape}')
         propagated_data = self.propagate(x)
         if propagated_data.shape != self.output_shape:
@@ -90,7 +90,7 @@ class InputLayer(Layer):
         return x
 
     def backpropagate(self, delta):
-        pass
+        return delta
 
 
 class DenseLayer(Layer):
@@ -120,10 +120,10 @@ class DenseLayer(Layer):
     def backpropagate(self, delta):
         next_delta = self.__get_next_delta(delta)
         self.__adjust_weights(delta)
-        return next_delta
+        return next_delta.flatten()
 
     def __adjust_weights(self, delta):
-        weights_delta = self.nn.learning_rate * delta.T @ self.input_data
+        weights_delta = self.nn.learning_rate * delta.reshape(-1, 1) @ self.input_data.reshape(1, -1)
         self.weights += weights_delta
 
     def __get_next_delta(self, delta):
@@ -148,13 +148,27 @@ class ActivationLayer(Layer):
         return self.input_shape
 
     def propagate(self, x):
-        state = self.activation.call(x)
-        self.state = state.reshape(-1, 1)
-        return state
+        self.state = self.activation.call(x)
+        return self.state
 
     def backpropagate(self, delta):
-        return self.__get_next_delta(delta)
-
-    def __get_next_delta(self, delta):
-        deriv = self.activation.deriv(self.state.T)
+        deriv = self.activation.deriv(self.state)
         return delta * deriv
+
+
+class FlattenLayer(Layer):
+
+    def __init__(self):
+        super().__init__()
+
+    def is_input_shape_valid(self, input_shape):
+        return True
+
+    def get_output_shape(self):
+        return tuple((np.prod(self.input_shape),))
+
+    def propagate(self, x):
+        return x.flatten()
+
+    def backpropagate(self, delta):
+        return delta.reshape(*self.input_shape)
