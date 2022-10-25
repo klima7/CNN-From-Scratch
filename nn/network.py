@@ -1,7 +1,7 @@
 import numpy as np
-
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.preprocessing import OneHotEncoder
+from tqdm import tqdm
 
 
 class NeuralNetwork(BaseEstimator, ClassifierMixin):
@@ -32,11 +32,11 @@ class NeuralNetwork(BaseEstimator, ClassifierMixin):
         if self.seed:
             np.random.seed(self.seed)
 
-        for i in tqdm(range(self.epochs)):
-            self.__learn_epoch(X, Y)
+        for epoch_no in range(self.epochs):
+            self.__learn_epoch(X, Y, epoch_no+1)
 
-    def __learn_epoch(self, X, Y):
-        for x, y in zip(X, Y):
+    def __learn_epoch(self, X, Y, epoch_no):
+        for x, y in tqdm(zip(X, Y), total=len(X), desc=f'Epoch {epoch_no}'):
             self.__learn_single(x, y)
 
     def __learn_single(self, x, y):
