@@ -318,3 +318,57 @@ class Conv2DLayer(BaseConvLayer):
                 for slice_index in range(self.input_slices_count):
                     result += x[x_index0][x_index1][slice_index] * kernel[kernel_index0][kernel_index1][slice_index]
         return result
+
+
+class BasePoolLayer(Layer, ABC):
+
+    def __init__(self, pool_size, stride, variant):
+        super().__init__()
+
+        self.pool_size = np.array(pool_size)
+        self.stride = np.array(stride or pool_size)
+        self.variant = variant
+        self.pool_function = self.get_pool_function(variant)
+
+    @property
+    def slices_count(self):
+        return self.input_shape[-1]
+
+    @property
+    def input_slice_size(self):
+        return self.input_shape[:-1]
+
+    @property
+    def output_slice_size(self):
+        return (self.input_slice_size - self.pool_size) // self.stride + 1
+
+    def get_output_shape(self):
+        return tuple((*self.output_slice_size, self.slices_count))
+
+    @staticmethod
+    def get_pool_function(variant):
+        if variant == 'max':
+            return np.max
+        elif variant == 'avg':
+            return np.mean
+        else:
+            raise InvalidParameterException(f'Invalid pool variant: {variant}')
+
+
+class Pool1DLayer(BasePoolLayer):
+
+    def __init__(self, pool_size=2, stride=None, variant='max'):
+        super().__init__(pool_size, stride, variant)
+
+    def is_input_shape_valid(self, input_shape):
+        return len(input_shape) == 2
+
+    def propagate(self, x):
+        output = np.zeros(self.output_shape, dtype=x.dtype)
+        for i in range(output.shape[0]):
+            group = x[i*self.stride:(i+1)*self.stride, :]
+            output[i, :] = self.pool_function(group, axis=0)
+        return output
+
+    def backpropagate(self, delta):
+        raise NotImplementedError
