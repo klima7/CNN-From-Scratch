@@ -24,10 +24,6 @@ class BaseConvLayer(Layer, ABC):
         self.initializer = initializer
         self.kernels = None
 
-    def __repr__(self):
-        return f'{self.__class__.__name__}(filters_count: {self.filters_count}, kernel_size: {self.kernel_size}, '\
-               f'stride: {self.stride}, dilation: {self.dilation}, padding: {self.padding}, initializer: {self.initializer})'
-
     @property
     def dilated_kernel_size(self):
         return (self.kernel_size - 1) * self.dilation + 1

@@ -64,7 +64,7 @@ class NeuralNetwork(BaseEstimator, ClassifierMixin):
         for layer in self.layers:
             print(layer)
             print(f'Shape: {tuple(layer.input_shape)} -> {tuple(layer.output_shape)}')
-            print('-'*70)
+            print('-'*50)
 
 
 class BinaryNNClassifier(NeuralNetwork):

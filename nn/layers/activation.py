@@ -8,9 +8,6 @@ class ActivationLayer(Layer):
         self.activation = activation
         self.state = None
 
-    def __repr__(self):
-        return f'{self.__class__.__name__}(activation: {self.activation})'
-
     def is_input_shape_valid(self, input_shape):
         return True
 

@@ -9,9 +9,6 @@ class InputLayer(Layer):
         super().__init__()
         self.shape = np.array(shape)
 
-    def __repr__(self):
-        return f'{self.__class__.__name__}(shape: {self.shape})'
-
     @property
     def input_shape(self):
         return self.output_shape

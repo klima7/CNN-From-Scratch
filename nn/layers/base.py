@@ -14,7 +14,7 @@ class Layer(ABC):
         self.output_shape = None
 
     def __repr__(self):
-        return f'{self.__class__.__name__}()'
+        return self.__class__.__name__
 
     @property
     def input_shape(self):

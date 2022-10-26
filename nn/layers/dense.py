@@ -10,9 +10,6 @@ class DenseLayer(Layer):
         self.input_data = None
         self.weights = None
 
-    def __repr__(self):
-        return f'{self.__class__.__name__}(neurons_count: {self.neurons_count}, initializer: {self.initializer})'
-
     def is_input_shape_valid(self, input_shape):
         return len(input_shape) == 1
 
