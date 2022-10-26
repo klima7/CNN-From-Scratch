@@ -4,6 +4,7 @@ import numpy as np
 
 from .exceptions import InvalidShapeError, InvalidParameterException
 from .initializers import RandomUniformInitializer
+from .utils import with_padding
 
 
 class Layer(ABC):
@@ -181,7 +182,7 @@ class FlattenLayer(Layer):
 
 class Conv1DLayer(Layer):
 
-    def __init__(self, filters_count, kernel_size, padding='zeros', stride=1, dilation=1,
+    def __init__(self, filters_count, kernel_size, padding='valid', stride=1, dilation=1,
                  initializer=RandomUniformInitializer()):
         super().__init__()
 
@@ -201,6 +202,10 @@ class Conv1DLayer(Layer):
         return (self.kernel_size - 1) * self.dilation + 1
 
     @property
+    def padding_size(self):
+        return self.dilated_kernel_size // 2 if self.padding != 'valid' else 0
+
+    @property
     def input_slices_count(self):
         return self.input_shape[1]
 
@@ -210,8 +215,7 @@ class Conv1DLayer(Layer):
 
     @property
     def adjusted_input_slice_size(self):
-        padding_size = self.dilated_kernel_size - 1 if self.padding != 'none' else 0
-        return self.input_slice_size + padding_size
+        return self.input_slice_size + 2*self.padding_size
 
     @property
     def output_slices_count(self):
@@ -233,7 +237,8 @@ class Conv1DLayer(Layer):
         return tuple((self.output_slice_size, self.output_slices_count))
 
     def propagate(self, x):
-        slices = [self.__conv_with_kernel(x, kernel) for kernel in self.kernels]
+        x_padded = with_padding(x, [self.padding_size, 0], mode=self.padding)
+        slices = [self.__conv_with_kernel(x_padded, kernel) for kernel in self.kernels]
         slices = np.array(slices)
         output = np.moveaxis(slices, [0, 1], [1, 0])
         return output
