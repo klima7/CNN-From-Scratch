@@ -113,10 +113,12 @@ class DenseLayer(Layer):
         return tuple((self.neurons_count,))
 
     def initialize(self):
-        self.weights = self.initializer(
-            (self.neurons_count, self.input_shape[0]),
-            layer=self
-        )
+        shape = (self.neurons_count, self.input_shape[0])
+        kwargs = {
+            'fan_in': self.input_shape[0],
+            'fan_out': self.output_shape[0]
+        }
+        self.weights = self.initializer(shape, **kwargs)
 
     def propagate(self, x):
         self.input_data = x
@@ -231,7 +233,10 @@ class BaseConvLayer(Layer, ABC):
         return tuple((*self.output_slice_size, self.output_slices_count))
 
     def initialize(self):
-        kwargs = {'layer': self}
+        kwargs = {
+            'fan_in': np.prod(self.kernel_size) * self.input_slices_count,
+            'fan_out': np.prod(self.kernel_size) * self.output_slices_count
+        }
         normalized_kernel_size = np.array(self.kernel_size).flatten()     # 3 -> (3,)
         shape = (*normalized_kernel_size, self.input_slices_count)
         kernels = [self.initializer(shape, **kwargs) for _ in range(self.output_slices_count)]

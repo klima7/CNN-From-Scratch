@@ -47,13 +47,6 @@ class RandomUniformInitializer(Initializer):
 class GlorotUniformInitialization(Initializer):
 
     def __call__(self, shape, **kwargs):
-        layer = kwargs['layer']
-
-        if len(layer.input_shape) != 1 or len(layer.output_shape) != 1:
-            raise InitializerError('Glorot uniform initialization works only with layers with flat input and output')
-
-        inputs = layer.input_shape[0]
-        outputs = layer.output_shape[0]
-
-        x = np.sqrt(6 / (inputs + outputs))
+        fan_in, fan_out = kwargs['fan_in'], kwargs['fan_out']
+        x = np.sqrt(6 / (fan_in + fan_out))
         return np.random.uniform(-x, x, shape)
