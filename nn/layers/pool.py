@@ -1,5 +1,7 @@
 from abc import ABC
+
 from .base import Layer
+from ..exceptions import InvalidParameterException
 
 import numpy as np
 
