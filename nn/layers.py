@@ -4,7 +4,6 @@ import numpy as np
 
 from .exceptions import InvalidShapeError, InvalidParameterException
 from .initializers import RandomUniformInitializer
-from .utils import with_padding
 
 
 class Layer(ABC):
@@ -238,6 +237,18 @@ class BaseConvLayer(Layer, ABC):
         kernels = [self.initializer(shape, **kwargs) for _ in range(self.output_slices_count)]
         self.kernels = np.array(kernels)
 
+    @staticmethod
+    def apply_padding(array, axes_pad_width, mode):
+        sym_pad_widths = [(val, val) for val in axes_pad_width]
+        if mode == 'valid':
+            return np.array(array)
+        elif mode == 'same':
+            return np.pad(array, sym_pad_widths, mode='constant', constant_values=0)
+        elif mode == 'edge':
+            return np.pad(array, sym_pad_widths, mode='edge')
+        else:
+            raise InvalidParameterException(f'Invalid padding mode: {mode}')
+
 
 class Conv1DLayer(BaseConvLayer):
 
@@ -249,7 +260,7 @@ class Conv1DLayer(BaseConvLayer):
         return len(input_shape) == 2
 
     def propagate(self, x):
-        x_padded = with_padding(x, [self.padding_size, 0], mode=self.padding)
+        x_padded = self.apply_padding(x, [self.padding_size, 0], mode=self.padding)
         slices = [self.__conv_with_kernel(x_padded, kernel) for kernel in self.kernels]
         slices = np.array(slices)
         output = np.moveaxis(slices, [0, 1], [1, 0])
@@ -285,7 +296,7 @@ class Conv2DLayer(BaseConvLayer):
         return len(input_shape) == 3
 
     def propagate(self, x):
-        x_padded = with_padding(x, [*self.padding_size, 0], mode=self.padding)
+        x_padded = self.apply_padding(x, [*self.padding_size, 0], mode=self.padding)
         slices = [self.__conv_with_kernel(x_padded, kernel) for kernel in self.kernels]
         slices = np.array(slices)
         output = np.moveaxis(slices, [0, 1, 2], [2, 0, 1])
