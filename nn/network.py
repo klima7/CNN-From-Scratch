@@ -63,7 +63,7 @@ class NeuralNetwork(BaseEstimator, ClassifierMixin):
     def summary(self):
         for layer in self.layers:
             print(layer)
-            print(f'Shape: {layer.input_shape} -> {layer.output_shape}')
+            print(f'Shape: {tuple(layer.input_shape)} -> {tuple(layer.output_shape)}')
             print('-'*70)
 
 
