@@ -18,6 +18,7 @@ class DenseLayer(Layer):
 
     def initialize(self):
         shape = (self.neurons_count, self.input_shape[0])
+        print(shape)
         kwargs = {
             'fan_in': self.input_shape[0],
             'fan_out': self.output_shape[0]
