@@ -5,12 +5,11 @@ import numpy as np
 from .base import Layer
 from ..exceptions import InvalidParameterException
 from ..initializers import RandomUniformInitializer
-from ..utils import apply_padding
 
 
 class BaseConvLayer(Layer, ABC):
 
-    def __init__(self, filters_count, kernel_size, padding, stride, dilation, initializer):
+    def __init__(self, filters_count, kernel_size, stride, dilation, initializer):
         super().__init__()
 
         if not np.all(np.mod(kernel_size, 2) != 0):
@@ -18,7 +17,6 @@ class BaseConvLayer(Layer, ABC):
 
         self.filters_count = filters_count
         self.kernel_size = np.array(kernel_size)
-        self.padding = padding
         self.stride = np.array(stride)
         self.dilation = np.array(dilation)
         self.initializer = initializer
@@ -29,10 +27,6 @@ class BaseConvLayer(Layer, ABC):
         return (self.kernel_size - 1) * self.dilation + 1
 
     @property
-    def padding_size(self):
-        return self.dilated_kernel_size // 2 if self.padding != 'valid' else np.zeros_like(self.dilated_kernel_size)
-
-    @property
     def input_slices_count(self):
         return self.input_shape[-1]
 
@@ -41,16 +35,12 @@ class BaseConvLayer(Layer, ABC):
         return self.input_shape[:-1]
 
     @property
-    def adjusted_input_slice_size(self):
-        return self.input_slice_size + 2*self.padding_size
-
-    @property
     def output_slices_count(self):
         return self.filters_count
 
     @property
     def output_slice_size(self):
-        return (self.adjusted_input_slice_size - self.dilated_kernel_size + 1) // self.stride
+        return (self.input_slice_size - self.dilated_kernel_size + 1) // self.stride
 
     def get_output_shape(self):
         return tuple((*self.output_slice_size, self.output_slices_count))
@@ -68,16 +58,15 @@ class BaseConvLayer(Layer, ABC):
 
 class Conv1DLayer(BaseConvLayer):
 
-    def __init__(self, filters_count, kernel_size, padding='valid', stride=1, dilation=1,
+    def __init__(self, filters_count, kernel_size, stride=1, dilation=1,
                  initializer=RandomUniformInitializer()):
-        super().__init__(filters_count, kernel_size, padding, stride, dilation, initializer)
+        super().__init__(filters_count, kernel_size, stride, dilation, initializer)
 
     def is_input_shape_valid(self, input_shape):
         return len(input_shape) == 2
 
     def propagate(self, x):
-        x_padded = apply_padding(x, [self.padding_size, 0], mode=self.padding)
-        slices = [self.__conv_with_kernel(x_padded, kernel) for kernel in self.kernels]
+        slices = [self.__conv_with_kernel(x, kernel) for kernel in self.kernels]
         slices = np.array(slices)
         output = np.moveaxis(slices, [0, 1], [1, 0])
         return output
@@ -104,16 +93,15 @@ class Conv1DLayer(BaseConvLayer):
 
 class Conv2DLayer(BaseConvLayer):
 
-    def __init__(self, filters_count, kernel_size, padding='valid', stride=(1, 1), dilation=(1, 1),
+    def __init__(self, filters_count, kernel_size, stride=(1, 1), dilation=(1, 1),
                  initializer=RandomUniformInitializer()):
-        super().__init__(filters_count, kernel_size, padding, stride, dilation, initializer)
+        super().__init__(filters_count, kernel_size, stride, dilation, initializer)
 
     def is_input_shape_valid(self, input_shape):
         return len(input_shape) == 3
 
     def propagate(self, x):
-        x_padded = apply_padding(x, [*self.padding_size, 0], mode=self.padding)
-        slices = [self.__conv_with_kernel(x_padded, kernel) for kernel in self.kernels]
+        slices = [self.__conv_with_kernel(x, kernel) for kernel in self.kernels]
         slices = np.array(slices)
         output = np.moveaxis(slices, [0, 1, 2], [2, 0, 1])
         return output
