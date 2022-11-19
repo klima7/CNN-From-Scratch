@@ -10,11 +10,13 @@ class NeuralNetwork(BaseEstimator, ClassifierMixin):
     DEFAULT_LEARNING_RATE = 0.01
 
     def __init__(self, layers):
-        self.__connect(layers)
         self.layers = layers
+        self.current_labels = None
 
         self.epochs = None
         self.learning_rate = None
+
+        self.__connect(layers)
 
     def __connect(self, layers):
         for i in range(len(layers)):
@@ -43,6 +45,7 @@ class NeuralNetwork(BaseEstimator, ClassifierMixin):
             self.__learn_single(x, y)
 
     def __learn_single(self, x, y):
+        self.current_labels = y
         prediction = self.__propagate(x)
         delta = y - prediction
         self.__backpropagate(delta)
