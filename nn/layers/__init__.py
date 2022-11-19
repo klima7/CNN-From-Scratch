@@ -8,3 +8,4 @@ from .log import Log1DLayer, Log2DLayer
 from .padding import Padding1DLayer, Padding2DLayer
 from .bias import BiasLayer
 from .softmax import SoftmaxLayer
+from .dropout import DropoutLayer
