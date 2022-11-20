@@ -26,11 +26,7 @@ class SoftmaxLayer(Layer):
         return self.state
 
     def backpropagate(self, delta):
-        self.__ensure_labels_are_onehot()
-        one_pos = self.__get_one_position()
-        new_delta = -self.state
-        new_delta[one_pos] = 1 - self.state[one_pos]
-        return new_delta
+        return delta    # delta is calculated by CrossEntropyLoss lost function
 
     def __ensure_is_last_layer(self):
         meaningful_layers = list(filter(lambda layer: not isinstance(layer, BaseLogLayer), self.nn.layers))

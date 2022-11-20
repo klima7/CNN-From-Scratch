@@ -3,15 +3,17 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.preprocessing import OneHotEncoder
 from tqdm import tqdm
 
+from .losses import MseLoss
+
 
 class NeuralNetwork(BaseEstimator, ClassifierMixin):
 
     DEFAULT_EPOCHS = 10
     DEFAULT_LEARNING_RATE = 0.01
 
-    def __init__(self, layers):
+    def __init__(self, layers, loss=None):
         self.layers = layers
-        self.current_labels = None
+        self.loss = loss or MseLoss()
 
         self.epochs = None
         self.learning_rate = None
@@ -45,9 +47,8 @@ class NeuralNetwork(BaseEstimator, ClassifierMixin):
             self.__learn_single(x, y)
 
     def __learn_single(self, x, y):
-        self.current_labels = y
         prediction = self.__propagate(x)
-        delta = y - prediction
+        delta = self.loss(prediction, y)
         self.__backpropagate(delta)
 
     def __propagate(self, x):
@@ -72,8 +73,8 @@ class NeuralNetwork(BaseEstimator, ClassifierMixin):
 
 class BinaryNNClassifier(NeuralNetwork):
 
-    def __init__(self, layers):
-        super().__init__(layers)
+    def __init__(self, layers, loss=None):
+        super().__init__(layers, loss)
         self.encoder = OneHotEncoder()
 
     def predict(self, X):
@@ -93,8 +94,8 @@ class BinaryNNClassifier(NeuralNetwork):
 
 class MulticlassNNClassifier(NeuralNetwork):
 
-    def __init__(self, layers):
-        super().__init__(layers)
+    def __init__(self, layers, loss=None):
+        super().__init__(layers, loss)
         self.encoder = OneHotEncoder()
 
     def fit(self, X, Y, **kwargs):
