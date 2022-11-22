@@ -17,6 +17,7 @@ class NeuralNetwork(BaseEstimator, ClassifierMixin):
 
         self.epochs = None
         self.learning_rate = None
+        self.training = False
 
         self.__connect(layers)
 
@@ -39,8 +40,12 @@ class NeuralNetwork(BaseEstimator, ClassifierMixin):
         self.epochs = kwargs.get('epochs', self.DEFAULT_EPOCHS)
         self.learning_rate = kwargs.get('learning_rage', self.DEFAULT_LEARNING_RATE)
 
+        self.training = True
+
         for epoch_no in range(self.epochs):
             self.__learn_epoch(X, Y, epoch_no+1)
+
+        self.training = False
 
     def __learn_epoch(self, X, Y, epoch_no):
         for x, y in tqdm(zip(X, Y), total=len(X), desc=f'Epoch {epoch_no}'):

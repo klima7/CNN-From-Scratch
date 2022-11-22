@@ -18,6 +18,9 @@ class DropoutLayer(Layer):
         return self.input_shape
 
     def propagate(self, x):
+        if not self.nn.training:
+            return x
+
         self.drop_mask = self.__create_drop_mask(x.shape)
         new_x = np.array(x)
         new_x[self.drop_mask] = 0
