@@ -48,7 +48,9 @@ class NeuralNetwork(BaseEstimator, ClassifierMixin):
         self.training = False
 
     def __learn_epoch(self, X, Y, epoch_no):
-        for x, y in tqdm(zip(X, Y), total=len(X), desc=f'Epoch {epoch_no}'):
+        Xs, Ys = self.__shuffle(X, Y)
+
+        for x, y in tqdm(zip(Xs, Ys), total=len(X), desc=f'Epoch {epoch_no}'):
             self.__learn_single(x, y)
 
     def __learn_single(self, x, y):
@@ -74,6 +76,11 @@ class NeuralNetwork(BaseEstimator, ClassifierMixin):
             print(layer)
             print(f'Shape: {tuple(layer.input_shape)} -> {tuple(layer.output_shape)}')
             print('-'*50)
+
+    @staticmethod
+    def __shuffle(X, Y):
+        permutation = np.random.permutation(len(X))
+        return X[permutation], Y[permutation]
 
 
 class BinaryNNClassifier(NeuralNetwork):
