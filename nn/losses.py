@@ -22,7 +22,7 @@ class MseLoss(Loss):
 
 
 class CrossEntropyLoss(Loss):
-    # This loss uses simplified formula assessing that last layer was softmax layer
+    # This loss uses simplified formula assessing that last layer is using softmax activation
 
     def __call__(self, prediction, target):
         self.__ensure_is_onehot(target)

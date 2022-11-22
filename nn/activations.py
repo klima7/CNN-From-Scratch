@@ -74,3 +74,14 @@ class SinActivation(Activation):
 
     def deriv(self, x):
         return np.cos(x)
+
+
+class SoftmaxActivation(Activation):    # works together with cross entropy loss
+
+    def call(self, x):
+        e = np.exp(x)
+        s = np.sum(e)
+        return e / s if s != 0 else np.zeros_like(e)
+
+    def deriv(self, x):
+        return np.ones_like(x)
