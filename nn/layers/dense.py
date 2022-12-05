@@ -1,6 +1,7 @@
 from ..initializers import RandomUniformInitializer
 from .base import Layer
 
+
 class DenseLayer(Layer):
 
     def __init__(self, neurons_count, initializer=RandomUniformInitializer()):
