@@ -8,8 +8,8 @@ from .losses import MseLoss
 
 class NeuralNetwork(BaseEstimator, ClassifierMixin):
 
-    DEFAULT_EPOCHS = 10
-    DEFAULT_LEARNING_RATE = 0.01
+    DEFAULT_EPOCHS = 1
+    DEFAULT_LEARNING_RATE = 0.001
 
     def __init__(self, layers, loss=None):
         self.layers = layers
@@ -38,7 +38,7 @@ class NeuralNetwork(BaseEstimator, ClassifierMixin):
 
     def fit(self, X, Y, **kwargs):
         self.epochs = kwargs.get('epochs', self.DEFAULT_EPOCHS)
-        self.learning_rate = kwargs.get('learning_rage', self.DEFAULT_LEARNING_RATE)
+        self.learning_rate = kwargs.get('learning_rate', self.DEFAULT_LEARNING_RATE)
 
         self.training = True
 
@@ -112,6 +112,7 @@ class MulticlassNNClassifier(NeuralNetwork):
 
     def fit(self, X, Y, **kwargs):
         encoded_Y = self.encoder.fit_transform(Y.reshape(-1, 1)).toarray()
+        print(encoded_Y.shape)
         super().fit(X, encoded_Y, **kwargs)
 
     def predict(self, X):

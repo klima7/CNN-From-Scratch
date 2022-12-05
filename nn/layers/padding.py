@@ -42,6 +42,13 @@ class BasePaddingLayer(Layer, ABC):
         else:
             raise InvalidParameterException(f'Invalid padding mode: {self.mode}')
 
+    @staticmethod
+    def _remove_padding(array, axes_pad_width):
+        reversed_padding = []
+        for pad_width, dim in zip(axes_pad_width, array.shape):
+            reversed_padding.append(slice(pad_width, dim - pad_width))
+        return array[tuple(reversed_padding)]
+
 
 class Padding1DLayer(BasePaddingLayer):
 
@@ -55,7 +62,7 @@ class Padding1DLayer(BasePaddingLayer):
         return self._apply_padding(x, [self.padding_size, 0])
 
     def backpropagate(self, delta):
-        raise NotImplementedError
+        return self._remove_padding(delta, [self.padding_size, 0])
 
 
 class Padding2DLayer(BasePaddingLayer):
@@ -69,4 +76,4 @@ class Padding2DLayer(BasePaddingLayer):
         return self._apply_padding(x, [*self.padding_size, 0])
 
     def backpropagate(self, delta):
-        raise NotImplementedError
+        return self._remove_padding(delta, [*self.padding_size, 0])
