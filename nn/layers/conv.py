@@ -145,12 +145,12 @@ class Conv2DLayer(BaseConvLayer):
         kernel_length = np.prod(kernel_size)
         sections = np.zeros((sections_count, kernel_length * data.shape[-1]))
 
-        centers0 = [dilated_kernel_size[0] // 2 + i * stride[0] for i in range(output_slice_size[0])]
-        centers1 = [dilated_kernel_size[1] // 2 + i * stride[1] for i in range(output_slice_size[1])]
+        anchors0 = [i * stride[0] for i in range(output_slice_size[0])]
+        anchors1 = [i * stride[1] for i in range(output_slice_size[1])]
 
         linear_index = 0
-        for center0 in centers0:
-            for center1 in centers1:
+        for center0 in anchors0:
+            for center1 in anchors1:
                 sections[linear_index] = Conv2DLayer.__get_single_image_section(data, (center0, center1), kernel_size, dilation)
                 linear_index += 1
 
@@ -159,11 +159,10 @@ class Conv2DLayer(BaseConvLayer):
     @staticmethod
     def __get_single_image_section(data, pos, kernel_size, dilation):
         section = np.zeros((np.prod(kernel_size), data.shape[-1]))
-        kernel_half = kernel_size // 2
 
-        positions0 = [pos[0] + dilation[0] * i for i in range(-kernel_half[0], kernel_half[0]+1)]
-        positions1 = [pos[1] + dilation[1] * i for i in range(-kernel_half[1], kernel_half[1] + 1)]
-        # print(kernel_size, kernel_half, len(positions0), len(positions1))
+        positions0 = [pos[0] + dilation[0] * i for i in range(kernel_size[0])]
+        positions1 = [pos[1] + dilation[1] * i for i in range(kernel_size[1])]
+
         linear_index = 0
         for pos0 in positions0:
             for pos1 in positions1:
