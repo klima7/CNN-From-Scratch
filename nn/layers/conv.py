@@ -40,9 +40,7 @@ class BaseConvLayer(Layer, ABC):
 
     @property
     def output_slice_size(self):
-        start = self.dilated_kernel_size // 2
-        end = self.input_slice_size - start - 1
-        diff = end - start + 1
+        diff = self.input_slice_size - 2 * (self.dilated_kernel_size // 2)
         return np.ceil(diff / self.stride).astype(int)
 
     def get_output_shape(self):
@@ -99,52 +97,73 @@ class Conv2DLayer(BaseConvLayer):
     def __init__(self, filters_count, kernel_size, stride=(1, 1), dilation=(1, 1),
                  initializer=RandomUniformInitializer()):
         super().__init__(filters_count, kernel_size, stride, dilation, initializer)
+        self.x = None
 
     def is_input_shape_valid(self, input_shape):
         return len(input_shape) == 3
 
     def propagate(self, x):
-        image_sections = self.__get_sections(x)
-        convoluted = self.__conv_sections(image_sections, self.kernels)
-        return convoluted
+        self.x = x
+        return Conv2DLayer.__conv_tensor(x, self.kernels, self.stride, self.dilation)
 
     def backpropagate(self, delta):
-        for slice_no in range(self.input_slices_count):
-            slice_delta = delta[..., slice_no]
+        updates = []
+        for slice_no in range(self.output_slices_count):
+            slice_delta = delta[..., slice_no, np.newaxis]
+            print(slice_delta.shape, self.kernels[0].shape)
+            kernels = np.array([slice_delta for _ in range(self.input_slices_count)])
+            update = Conv2DLayer.__conv_tensor(self.x, kernels, self.stride, self.dilation)
+            updates.append(update)
+        updates = np.array(updates)
 
-    def __conv_tensor(self, tensor, kernels):
-        sections = self.__get_sections(tensor)
+        return delta
+
+    @staticmethod
+    def __conv_tensor(tensor, kernels, stride, dilation):
+        kernel_size = np.array(kernels[0].shape[:-1])
+        dilated_kernel_size = (kernel_size - 1) * dilation + 1
+        output_slice_size = np.ceil((tensor.shape[:-1] - 2 * (dilated_kernel_size // 2)) / stride).astype(int)
+
+        sections = Conv2DLayer.__get_sections(tensor, kernel_size, stride, dilation)
+        flatten_kernels = kernels.reshape((len(kernels), -1))
+        flatten_convoluted = sections @ flatten_kernels.T
+        convoluted = flatten_convoluted.reshape((*output_slice_size, len(kernels)))
+        return convoluted
+
+    def __conv_sections(self, sections, kernels):
         flatten_kernels = kernels.reshape((len(kernels), -1))
         flatten_convoluted = sections @ flatten_kernels.T
         convoluted = flatten_convoluted.reshape((*self.output_slice_size, len(kernels)))
-
-    def __conv_sections(self, sections, kernels):
-
         return convoluted
 
-    def __get_sections(self, data):
-        sections_count = np.prod(self.output_slice_size)
-        kernel_count = np.prod(self.kernel_size)
-        sections = np.zeros((sections_count, kernel_count * self.input_slices_count))
+    @staticmethod
+    def __get_sections(data, kernel_size, stride, dilation):
+        dilated_kernel_size = (kernel_size - 1) * dilation + 1
+        output_slice_size = np.ceil((data.shape[:-1] - 2 * (dilated_kernel_size // 2)) / stride).astype(int)
 
-        centers0 = [self.dilated_kernel_size[0] // 2 + i * self.stride[0] for i in range(self.output_slice_size[0])]
-        centers1 = [self.dilated_kernel_size[1] // 2 + i * self.stride[1] for i in range(self.output_slice_size[1])]
+        sections_count = np.prod(output_slice_size)
+        kernel_length = np.prod(kernel_size)
+        sections = np.zeros((sections_count, kernel_length * data.shape[-1]))
+
+        centers0 = [dilated_kernel_size[0] // 2 + i * stride[0] for i in range(output_slice_size[0])]
+        centers1 = [dilated_kernel_size[1] // 2 + i * stride[1] for i in range(output_slice_size[1])]
 
         linear_index = 0
         for center0 in centers0:
             for center1 in centers1:
-                sections[linear_index] = self.__get_single_image_section(data, (center0, center1))
+                sections[linear_index] = Conv2DLayer.__get_single_image_section(data, (center0, center1), kernel_size, dilation)
                 linear_index += 1
 
         return sections
 
-    def __get_single_image_section(self, data, pos):
-        section = np.zeros((np.prod(self.kernel_size), self.input_slices_count))
-        kernel_half = self.kernel_size // 2
+    @staticmethod
+    def __get_single_image_section(data, pos, kernel_size, dilation):
+        section = np.zeros((np.prod(kernel_size), data.shape[-1]))
+        kernel_half = kernel_size // 2
 
-        positions0 = [pos[0] + self.dilation[0] * i for i in range(-kernel_half[0], kernel_half[0]+1)]
-        positions1 = [pos[1] + self.dilation[1] * i for i in range(-kernel_half[1], kernel_half[1] + 1)]
-
+        positions0 = [pos[0] + dilation[0] * i for i in range(-kernel_half[0], kernel_half[0]+1)]
+        positions1 = [pos[1] + dilation[1] * i for i in range(-kernel_half[1], kernel_half[1] + 1)]
+        # print(kernel_size, kernel_half, len(positions0), len(positions1))
         linear_index = 0
         for pos0 in positions0:
             for pos1 in positions1:
