@@ -122,6 +122,7 @@ class Conv2DLayer(BaseConvLayer):
         for slice_no in range(self.output_slices_count):
             slice_delta = delta[..., slice_no, np.newaxis]
             kernels = np.array([slice_delta for _ in range(self.input_slices_count)])
+            kernels = np.transpose(kernels, (3, 1, 2, 0))
             update = convolve(self.x, kernels, self.stride, self.dilation, full=False)
             updates.append(update)
 
