@@ -114,17 +114,10 @@ class Conv2DLayer(BaseConvLayer):
             update = Conv2DLayer.__conv_tensor(self.x, kernels, self.stride, self.dilation)
             updates.append(update)
         updates = np.array(updates)
+        print(updates.shape)
 
-        # print('delta', delta.shape)
-        new_deltas = []
-        for slice_no in range(self.input_slices_count):
-            kernels = np.transpose(self.kernels[..., slice_no, np.newaxis], (3, 1, 2, 0))
-            new_delta = Conv2DLayer.__conv_tensor(delta, kernels, self.stride, self.dilation, full=True)
-            new_delta = np.squeeze(new_delta)
-            new_deltas.append(new_delta)
-        new_delta = np.array(new_deltas)
-        new_delta = np.transpose(new_delta, (1, 2, 0))
-
+        kernels = np.transpose(self.kernels, (3, 1, 2, 0))
+        new_delta = Conv2DLayer.__conv_tensor(delta, kernels, self.stride, self.dilation, full=True)
         return new_delta
 
     @staticmethod
