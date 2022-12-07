@@ -15,6 +15,7 @@ def convolve(tensor, kernels, stride, dilation, full=False):
     return convoluted
 
 
+@njit
 def get_convolution_sections(data, kernel_size, stride, dilation, full):
     dilated_kernel_size = get_dilated_kernel_size(kernel_size, dilation)
     output_slice_size = get_convolution_output_size(data.shape[:-1], kernel_size, stride, dilation, full)
@@ -37,6 +38,7 @@ def get_convolution_sections(data, kernel_size, stride, dilation, full):
     return sections
 
 
+@njit
 def get_single_convolution_section(data, pos, kernel_size, dilation):
     section = np.zeros((np.prod(kernel_size), data.shape[-1]))
 
@@ -53,6 +55,7 @@ def get_single_convolution_section(data, pos, kernel_size, dilation):
     return section.flatten()
 
 
+@njit
 def get_convolution_output_size(data_size, kernel_size, stride, dilation, full=False):
     data_size = np.array(data_size)
     dilated_kernel_size = get_dilated_kernel_size(kernel_size, dilation)
@@ -66,5 +69,6 @@ def get_convolution_output_size(data_size, kernel_size, stride, dilation, full=F
     return size
 
 
+@njit
 def get_dilated_kernel_size(kernel_size, dilation):
     return (kernel_size - 1) * dilation + 1

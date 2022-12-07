@@ -124,4 +124,6 @@ class Conv2DLayer(BaseConvLayer):
             kernels = np.array([slice_delta for _ in range(self.input_slices_count)])
             update = convolve(self.x, kernels, self.stride, self.dilation, full=False)
             updates.append(update)
+
         updates = np.array(updates)
+        self.kernels += self.nn.learning_rate * updates
