@@ -110,21 +110,29 @@ class Conv2DLayer(BaseConvLayer):
         updates = []
         for slice_no in range(self.output_slices_count):
             slice_delta = delta[..., slice_no, np.newaxis]
-            print(slice_delta.shape, self.kernels[0].shape)
             kernels = np.array([slice_delta for _ in range(self.input_slices_count)])
             update = Conv2DLayer.__conv_tensor(self.x, kernels, self.stride, self.dilation)
             updates.append(update)
         updates = np.array(updates)
 
-        return delta
+        # print('delta', delta.shape)
+        new_deltas = []
+        for slice_no in range(self.input_slices_count):
+            kernels = np.transpose(self.kernels[..., slice_no, np.newaxis], (3, 1, 2, 0))
+            new_delta = Conv2DLayer.__conv_tensor(delta, kernels, self.stride, self.dilation, full=True)
+            new_delta = np.squeeze(new_delta)
+            new_deltas.append(new_delta)
+        new_delta = np.array(new_deltas)
+        new_delta = np.transpose(new_delta, (1, 2, 0))
+
+        return new_delta
 
     @staticmethod
-    def __conv_tensor(tensor, kernels, stride, dilation):
-        kernel_size = np.array(kernels[0].shape[:-1])
-        dilated_kernel_size = (kernel_size - 1) * dilation + 1
-        output_slice_size = np.ceil((tensor.shape[:-1] - 2 * (dilated_kernel_size // 2)) / stride).astype(int)
+    def __conv_tensor(tensor, kernels, stride, dilation, full=False):
+        kernel_size = np.array(kernels.shape[1:-1])
+        output_slice_size = Conv2DLayer.__get_conv_output_size(tensor.shape[:-1], kernel_size, stride, dilation, full)
 
-        sections = Conv2DLayer.__get_sections(tensor, kernel_size, stride, dilation)
+        sections = Conv2DLayer.__get_sections(tensor, kernel_size, stride, dilation, full)
         flatten_kernels = kernels.reshape((len(kernels), -1))
         flatten_convoluted = sections @ flatten_kernels.T
         convoluted = flatten_convoluted.reshape((*output_slice_size, len(kernels)))
@@ -137,16 +145,18 @@ class Conv2DLayer(BaseConvLayer):
         return convoluted
 
     @staticmethod
-    def __get_sections(data, kernel_size, stride, dilation):
-        dilated_kernel_size = (kernel_size - 1) * dilation + 1
-        output_slice_size = np.ceil((data.shape[:-1] - 2 * (dilated_kernel_size // 2)) / stride).astype(int)
+    def __get_sections(data, kernel_size, stride, dilation, full=False):
+        dilated_kernel_size = Conv2DLayer.__get_dilated_kernel_size(kernel_size, dilation)
+        output_slice_size = Conv2DLayer.__get_conv_output_size(data.shape[:-1], kernel_size, stride, dilation, full)
 
         sections_count = np.prod(output_slice_size)
         kernel_length = np.prod(kernel_size)
         sections = np.zeros((sections_count, kernel_length * data.shape[-1]))
 
-        anchors0 = [i * stride[0] for i in range(output_slice_size[0])]
-        anchors1 = [i * stride[1] for i in range(output_slice_size[1])]
+        offset = -dilated_kernel_size+1 if full else (0, 0)
+
+        anchors0 = [i * stride[0] + offset[0] for i in range(output_slice_size[0])]
+        anchors1 = [i * stride[1] + offset[1] for i in range(output_slice_size[1])]
 
         linear_index = 0
         for center0 in anchors0:
@@ -166,7 +176,21 @@ class Conv2DLayer(BaseConvLayer):
         linear_index = 0
         for pos0 in positions0:
             for pos1 in positions1:
-                section[linear_index] = data[pos0, pos1, :]
+                index_valid = 0 <= pos0 < data.shape[0] and 0 <= pos1 < data.shape[1]
+                section[linear_index] = data[pos0, pos1, :] if index_valid else np.zeros((data.shape[-1],))
                 linear_index += 1
 
         return section.flatten()
+
+    @staticmethod
+    def __get_conv_output_size(data_size, kernel_size, stride, dilation, full=False):
+        dilated_kernel_size = Conv2DLayer.__get_dilated_kernel_size(kernel_size, dilation)
+        if full:
+            tmp = np.ceil((data_size + 2*kernel_size - 2 - 2*(dilated_kernel_size // 2)) / stride).astype(int)
+            return tmp
+        else:
+            return np.ceil((data_size - 2*(dilated_kernel_size // 2)) / stride).astype(int)
+
+    @staticmethod
+    def __get_dilated_kernel_size(kernel_size, dilation):
+        return (kernel_size - 1) * dilation + 1
