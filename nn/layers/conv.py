@@ -3,7 +3,7 @@ from abc import ABC
 import numpy as np
 
 from .base import Layer
-from ..convolution import convolve
+from ..convolution import convolve, get_dilated_kernel_size, get_convolution_output_size, dilate
 from ..exceptions import InvalidParameterException
 from ..initializers import RandomUniformInitializer
 
@@ -25,7 +25,7 @@ class BaseConvLayer(Layer, ABC):
 
     @property
     def dilated_kernel_size(self):
-        return (self.kernel_size - 1) * self.dilation + 1
+        return get_dilated_kernel_size(self.kernel_size, self.dilation)
 
     @property
     def input_slices_count(self):
@@ -41,8 +41,7 @@ class BaseConvLayer(Layer, ABC):
 
     @property
     def output_slice_size(self):
-        diff = self.input_slice_size - 2 * (self.dilated_kernel_size // 2)
-        return np.ceil(diff / self.stride).astype(int)
+        return get_convolution_output_size(tuple(self.input_slice_size), self.kernel_size, self.stride, self.dilation, full=False)
 
     def get_output_shape(self):
         return tuple((*self.output_slice_size, self.output_slices_count))
@@ -108,9 +107,10 @@ class Conv2DLayer(BaseConvLayer):
         return convolve(x, self.kernels, self.stride, self.dilation, full=False)
 
     def backpropagate(self, delta):
-        new_delta = self.__get_new_delta(delta)
+        # new_delta = self.__get_new_delta(delta)
         self.__update_weights(delta)
-        return new_delta
+        return np.zeros((27, 27, 1), dtype=np.float64)
+        # return new_delta
 
     def __get_new_delta(self, delta):
         kernels = np.transpose(self.kernels, (3, 1, 2, 0))
@@ -121,10 +121,13 @@ class Conv2DLayer(BaseConvLayer):
         updates = []
         for slice_no in range(self.output_slices_count):
             slice_delta = delta[..., slice_no, np.newaxis]
+            slice_delta = dilate(slice_delta, self.stride)
             kernels = np.array([slice_delta for _ in range(self.input_slices_count)])
             kernels = np.transpose(kernels, (3, 1, 2, 0))
-            update = convolve(self.x, kernels, self.stride, self.dilation, full=False)
+            update = convolve(self.x, kernels, np.array([1, 1]), self.dilation, full=False)
             updates.append(update)
 
         updates = np.array(updates)
         self.kernels += self.nn.learning_rate * updates
+
+

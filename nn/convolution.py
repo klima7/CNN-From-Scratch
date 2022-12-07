@@ -56,7 +56,8 @@ def get_single_convolution_section(data, pos, kernel_size, dilation):
 
 
 @njit
-def get_convolution_output_size(data_size, kernel_size, stride, dilation, full=False):
+def get_convolution_output_size(data_size, kernel_size, stride, dilation, full):
+    # print(type(data_size), type(kernel_size), type(stride), type(dilation))
     data_size = np.array(data_size)
     dilated_kernel_size = get_dilated_kernel_size(kernel_size, dilation)
 
@@ -72,3 +73,14 @@ def get_convolution_output_size(data_size, kernel_size, stride, dilation, full=F
 @njit
 def get_dilated_kernel_size(kernel_size, dilation):
     return (kernel_size - 1) * dilation + 1
+
+
+def dilate(array, dilation):
+    array_size = np.array(array.shape[:2])
+    array_depth = array.shape[2]
+    dilated_size = get_dilated_kernel_size(array_size, dilation)
+    dilated_array = np.zeros((dilated_size[0], dilated_size[1], array_depth), dtype=array.dtype)
+    slice0 = np.s_[0::dilation[0]]
+    slice1 = np.s_[0::dilation[1]]
+    dilated_array[slice0, slice1, :] = array
+    return dilated_array
