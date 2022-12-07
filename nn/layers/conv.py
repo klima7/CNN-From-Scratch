@@ -108,6 +108,16 @@ class Conv2DLayer(BaseConvLayer):
         return convolve(x, self.kernels, self.stride, self.dilation, full=False)
 
     def backpropagate(self, delta):
+        new_delta = self.__get_new_delta(delta)
+        self.__update_weights(delta)
+        return new_delta
+
+    def __get_new_delta(self, delta):
+        kernels = np.transpose(self.kernels, (3, 1, 2, 0))
+        new_delta = convolve(delta, kernels, self.stride, self.dilation, full=True)
+        return new_delta
+
+    def __update_weights(self, delta):
         updates = []
         for slice_no in range(self.output_slices_count):
             slice_delta = delta[..., slice_no, np.newaxis]
@@ -115,7 +125,3 @@ class Conv2DLayer(BaseConvLayer):
             update = convolve(self.x, kernels, self.stride, self.dilation, full=False)
             updates.append(update)
         updates = np.array(updates)
-
-        kernels = np.transpose(self.kernels, (3, 1, 2, 0))
-        new_delta = convolve(delta, kernels, self.stride, self.dilation, full=True)
-        return new_delta

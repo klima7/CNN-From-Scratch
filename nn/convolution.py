@@ -4,7 +4,6 @@ import numpy as np
 from numba import njit
 
 
-@njit
 def convolve(tensor, kernels, stride, dilation, full=False):
     kernel_size = np.array(kernels.shape[1:-1])
     output_slice_size = get_convolution_output_size(tensor.shape[:-1], kernel_size, stride, dilation, full)
@@ -16,7 +15,6 @@ def convolve(tensor, kernels, stride, dilation, full=False):
     return convoluted
 
 
-@njit
 def get_convolution_sections(data, kernel_size, stride, dilation, full):
     dilated_kernel_size = get_dilated_kernel_size(kernel_size, dilation)
     output_slice_size = get_convolution_output_size(data.shape[:-1], kernel_size, stride, dilation, full)
@@ -39,7 +37,6 @@ def get_convolution_sections(data, kernel_size, stride, dilation, full):
     return sections
 
 
-@njit
 def get_single_convolution_section(data, pos, kernel_size, dilation):
     section = np.zeros((np.prod(kernel_size), data.shape[-1]))
 
@@ -56,18 +53,18 @@ def get_single_convolution_section(data, pos, kernel_size, dilation):
     return section.flatten()
 
 
-@njit
 def get_convolution_output_size(data_size, kernel_size, stride, dilation, full=False):
     data_size = np.array(data_size)
     dilated_kernel_size = get_dilated_kernel_size(kernel_size, dilation)
+
+    available_space = (data_size - dilated_kernel_size) + 1
     if full:
-        tmp = (data_size + 2*kernel_size - 2 - 2*(dilated_kernel_size // 2)) / stride
-        return np.array([math.trunc(tmp[0]), math.trunc(tmp[1])])
-    else:
-        tmp = (data_size - 2*(dilated_kernel_size // 2)) / stride
-        return np.array([math.ceil(tmp[0]), math.ceil(tmp[1])])
+        available_space += 2 * kernel_size - 2
+
+    size_float = available_space / stride
+    size = np.array([math.ceil(size_float[0]), math.ceil(size_float[1])])
+    return size
 
 
-@njit
 def get_dilated_kernel_size(kernel_size, dilation):
     return (kernel_size - 1) * dilation + 1
