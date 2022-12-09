@@ -107,14 +107,15 @@ class Conv2DLayer(BaseConvLayer):
         return convolve(x, self.kernels, self.stride, self.dilation, full=False)
 
     def backpropagate(self, delta):
-        # new_delta = self.__get_new_delta(delta)
+        new_delta = self.__get_new_delta(delta)
         self.__update_weights(delta)
-        return np.zeros((27, 27, 1), dtype=np.float64)
-        # return new_delta
+        # return np.zeros((27, 27, 1), dtype=np.float64)
+        return new_delta
 
     def __get_new_delta(self, delta):
         kernels = np.transpose(self.kernels, (3, 1, 2, 0))
-        new_delta = convolve(delta, kernels, self.stride, self.dilation, full=True)
+        delta = dilate(delta, self.stride)
+        new_delta = convolve(delta, kernels, np.array([1, 1]), self.dilation, full=True)
         return new_delta
 
     def __update_weights(self, delta):
