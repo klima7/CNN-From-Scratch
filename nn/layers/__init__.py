@@ -1,5 +1,5 @@
 from .activation import ActivationLayer
-from .conv import Conv1DLayer, Conv2DLayer
+from .conv import Conv2DLayer
 from .dense import DenseLayer
 from .flatten import FlattenLayer
 from .input import InputLayer

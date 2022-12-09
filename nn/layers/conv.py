@@ -1,5 +1,3 @@
-from abc import ABC
-
 import numpy as np
 
 from .base import Layer
@@ -8,9 +6,10 @@ from ..exceptions import InvalidParameterException
 from ..initializers import RandomUniformInitializer
 
 
-class BaseConvLayer(Layer, ABC):
+class Conv2DLayer(Layer):
 
-    def __init__(self, filters_count, kernel_size, stride, dilation, initializer):
+    def __init__(self, filters_count, kernel_size, stride=(1, 1), dilation=(1, 1),
+                 initializer=RandomUniformInitializer()):
         super().__init__()
 
         if not np.all(np.mod(kernel_size, 2) != 0):
@@ -22,6 +21,7 @@ class BaseConvLayer(Layer, ABC):
         self.dilation = np.array(dilation)
         self.initializer = initializer
         self.kernels = None
+        self.x = None
 
     @property
     def dilated_kernel_size(self):
@@ -57,49 +57,6 @@ class BaseConvLayer(Layer, ABC):
         self.kernels = np.array(kernels)
         self.params_count = self.kernels.size
 
-
-class Conv1DLayer(BaseConvLayer):
-
-    def __init__(self, filters_count, kernel_size, stride=1, dilation=1,
-                 initializer=RandomUniformInitializer()):
-        super().__init__(filters_count, kernel_size, stride, dilation, initializer)
-
-    def is_input_shape_valid(self, input_shape):
-        return len(input_shape) == 2
-
-    def propagate(self, x):
-        slices = [self.__conv_with_kernel(x, kernel) for kernel in self.kernels]
-        slices = np.array(slices)
-        output = np.moveaxis(slices, [0, 1], [1, 0])
-        return output
-
-    def backpropagate(self, delta):
-        raise NotImplementedError
-
-    def __conv_with_kernel(self, x, kernel):
-        output = np.zeros(self.output_slice_size, dtype=x.dtype)
-        positions = [self.dilated_kernel_size // 2 + i * self.stride for i in range(self.output_slice_size[0])]
-        for index, pos in enumerate(positions):
-            output[index] = self.__conv(x, kernel, pos)
-        return output
-
-    def __conv(self, x, kernel, pos):
-        kernel_half = self.kernel_size // 2
-        result = 0
-        x_indexes = [pos + self.dilation * i for i in range(-kernel_half, kernel_half+1)]
-        for kernel_index, x_index in enumerate(x_indexes):
-            for slice_index in range(self.input_slices_count):
-                result += x[x_index][slice_index] * kernel[kernel_index][slice_index]
-        return result
-
-
-class Conv2DLayer(BaseConvLayer):
-
-    def __init__(self, filters_count, kernel_size, stride=(1, 1), dilation=(1, 1),
-                 initializer=RandomUniformInitializer()):
-        super().__init__(filters_count, kernel_size, stride, dilation, initializer)
-        self.x = None
-
     def is_input_shape_valid(self, input_shape):
         return len(input_shape) == 3
 
@@ -110,7 +67,6 @@ class Conv2DLayer(BaseConvLayer):
     def backpropagate(self, delta):
         new_delta = self.__get_new_delta(delta)
         self.__update_weights(delta)
-        # return np.zeros((27, 27, 1), dtype=np.float64)
         return new_delta
 
     def __get_new_delta(self, delta):
@@ -131,5 +87,3 @@ class Conv2DLayer(BaseConvLayer):
 
         updates = np.array(updates)
         self.kernels += self.nn.learning_rate * updates
-
-
