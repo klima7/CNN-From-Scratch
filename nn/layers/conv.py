@@ -55,6 +55,7 @@ class BaseConvLayer(Layer, ABC):
         shape = (*normalized_kernel_size, self.input_slices_count)
         kernels = [self.initializer(shape, **kwargs) for _ in range(self.output_slices_count)]
         self.kernels = np.array(kernels)
+        self.params_count = self.kernels.size
 
 
 class Conv1DLayer(BaseConvLayer):

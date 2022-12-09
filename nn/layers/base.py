@@ -12,6 +12,7 @@ class Layer(ABC):
         self.prev_layer = None
         self.next_layer = None
         self.output_shape = None
+        self.params_count = 0
 
     def __repr__(self):
         return self.__class__.__name__

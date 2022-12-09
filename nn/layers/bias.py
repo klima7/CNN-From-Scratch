@@ -21,6 +21,7 @@ class BiasLayer(Layer):
             'fan_out': self.output_shape[0]
         }
         self.bias = self.initializer(self.input_shape, **kwargs)
+        self.params_count = self.bias.size
 
     def propagate(self, x):
         return x + self.bias

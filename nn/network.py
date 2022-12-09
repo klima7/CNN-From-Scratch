@@ -21,6 +21,8 @@ class NeuralNetwork(BaseEstimator, ClassifierMixin):
 
         self.__connect(layers)
 
+        self.total_params_count = sum([layer.params_count for layer in self.layers])
+
     def __connect(self, layers):
         for i in range(len(layers)):
             layer = layers[i]
@@ -72,10 +74,13 @@ class NeuralNetwork(BaseEstimator, ClassifierMixin):
         return np.array(predictions)
 
     def summary(self):
-        for layer in self.layers:
-            print(layer)
-            print(f'Shape: {tuple(layer.input_shape)} -> {tuple(layer.output_shape)}')
-            print('-'*50)
+        print(f"{'NO':<4} | {'NAME':<20} | {'PARAMS':10} | SHAPE")
+        # print('-'*70)
+        for index, layer in enumerate(self.layers):
+            name_text = str(layer)
+            shape_text = f'{tuple(layer.input_shape)} -> {tuple(layer.output_shape)}'
+            print(f'{index:<4} | {name_text:<20} | {layer.params_count:<10} | {shape_text}')
+        print(f'Total parameters count: {self.total_params_count}')
 
     @staticmethod
     def __shuffle(X, Y):

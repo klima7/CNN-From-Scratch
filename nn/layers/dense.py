@@ -24,6 +24,7 @@ class DenseLayer(Layer):
             'fan_out': self.output_shape[0]
         }
         self.weights = self.initializer(shape, **kwargs)
+        self.params_count = self.weights.size
 
     def propagate(self, x):
         self.input_data = x

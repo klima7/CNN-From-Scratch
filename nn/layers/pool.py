@@ -29,7 +29,9 @@ class Pool2DLayer(Layer):
         return tuple((*self.output_slice_size, self.slices_count))
 
     def is_input_shape_valid(self, input_shape):
-        return len(input_shape) == 3
+        return len(input_shape) == 3 \
+               and input_shape[0] % self.pool_size[0] == 0 \
+               and input_shape[1] % self.pool_size[1] == 0
 
     def propagate(self, x):
         output = np.zeros(self.output_shape, dtype=x.dtype)
