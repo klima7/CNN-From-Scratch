@@ -2,7 +2,7 @@ import numpy as np
 
 from .base import Layer
 from ..convolution import convolve, get_dilated_kernel_size, get_convolution_output_size, dilate
-from ..exceptions import InvalidParameterException
+from ..exceptions import InvalidParameterException, InvalidShapeException
 from ..initializers import RandomUniformInitializer
 
 
@@ -57,8 +57,9 @@ class Conv2DLayer(Layer):
         self.kernels = np.array(kernels)
         self.params_count = self.kernels.size
 
-    def is_input_shape_valid(self, input_shape):
-        return len(input_shape) == 3
+    def validate_input_shape(self, input_shape):
+        if len(input_shape) != 3:
+            raise InvalidShapeException(f'{self.__class__.__name__} input must be 3D, but is {input_shape}')
 
     def propagate(self, x):
         self.x = x

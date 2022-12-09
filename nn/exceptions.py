@@ -1,18 +1,28 @@
-class InvalidShapeError(Exception):
+class NetworkException(Exception):
     def __init__(self, msg=''):
         super().__init__(msg)
 
 
-class InvalidParameterException(Exception):
+class LayerConnectingException(NetworkException):
+    def __init__(self, layer_no, layer):
+        super().__init__(f'Exception occurred during connecting layer {layer_no} ({str(layer)})')
+
+
+class InvalidShapeException(NetworkException):
     def __init__(self, msg=''):
         super().__init__(msg)
 
 
-class InvalidLayerPositionException(Exception):
+class InvalidParameterException(NetworkException):
     def __init__(self, msg=''):
         super().__init__(msg)
 
 
-class InvalidLabelsException(Exception):
+class InvalidLayerPositionException(NetworkException):
+    def __init__(self, msg=''):
+        super().__init__(msg)
+
+
+class InvalidLabelsException(NetworkException):
     def __init__(self, msg=''):
         super().__init__(msg)

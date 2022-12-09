@@ -1,4 +1,5 @@
 from ..initializers import RandomUniformInitializer
+from ..exceptions import InvalidShapeException
 from .base import Layer
 
 
@@ -11,8 +12,9 @@ class DenseLayer(Layer):
         self.input_data = None
         self.weights = None
 
-    def is_input_shape_valid(self, input_shape):
-        return len(input_shape) == 1
+    def validate_input_shape(self, input_shape):
+        if len(input_shape) != 1:
+            raise InvalidShapeException(f'{self.__class__.__name__} input must be 1D, but is {input_shape}')
 
     def get_output_shape(self):
         return tuple((self.neurons_count,))

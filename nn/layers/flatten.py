@@ -8,9 +8,6 @@ class FlattenLayer(Layer):
     def __init__(self):
         super().__init__()
 
-    def is_input_shape_valid(self, input_shape):
-        return True
-
     def get_output_shape(self):
         return tuple((np.prod(self.input_shape),))
 

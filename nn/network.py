@@ -1,9 +1,13 @@
+import sys
+import traceback
+
 import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.preprocessing import OneHotEncoder
 from tqdm import tqdm
 
 from .losses import MseLoss
+from .exceptions import LayerConnectingException
 
 
 class NeuralNetwork(BaseEstimator, ClassifierMixin):
@@ -22,13 +26,6 @@ class NeuralNetwork(BaseEstimator, ClassifierMixin):
         self.__connect(layers)
 
         self.total_params_count = sum([layer.params_count for layer in self.layers])
-
-    def __connect(self, layers):
-        for i in range(len(layers)):
-            layer = layers[i]
-            prev_layer = layers[i-1] if i-1 >= 0 else None
-            next_layer = layers[i+1] if i+1 < len(layers) else None
-            layer.connect(self, prev_layer, next_layer)
 
     @property
     def input_layer(self):
@@ -49,6 +46,31 @@ class NeuralNetwork(BaseEstimator, ClassifierMixin):
 
         self.training = False
 
+    def predict(self, X):
+        predictions = [self.__propagate(x) for x in X]
+        return np.array(predictions)
+
+    def summary(self):
+        print(f"{'NO':<4} | {'NAME':<20} | {'PARAMS':10} | SHAPE")
+        for index, layer in enumerate(self.layers):
+            name_text = str(layer)
+            shape_text = f'{tuple(layer.input_shape)} -> {tuple(layer.output_shape)}'
+            print(f'{index:<4} | {name_text:<20} | {layer.params_count:<10} | {shape_text}')
+        print(f'Total parameters count: {self.total_params_count}')
+
+    def __connect(self, layers):
+        for i in range(len(layers)):
+            self.__connect_single(layers, i)
+
+    def __connect_single(self, layers, index):
+        layer = layers[index]
+        prev_layer = layers[index - 1] if index - 1 >= 0 else None
+        next_layer = layers[index + 1] if index + 1 < len(layers) else None
+        try:
+            layer.connect(self, prev_layer, next_layer)
+        except Exception as e:
+            raise e from LayerConnectingException(index, layer)
+
     def __learn_epoch(self, X, Y, epoch_no):
         Xs, Ys = self.__shuffle(X, Y)
 
@@ -68,19 +90,6 @@ class NeuralNetwork(BaseEstimator, ClassifierMixin):
     def __backpropagate(self, delta):
         for layer in reversed(self.layers):
             delta = layer.backpropagate_with_validation(delta)
-
-    def predict(self, X):
-        predictions = [self.__propagate(x) for x in X]
-        return np.array(predictions)
-
-    def summary(self):
-        print(f"{'NO':<4} | {'NAME':<20} | {'PARAMS':10} | SHAPE")
-        # print('-'*70)
-        for index, layer in enumerate(self.layers):
-            name_text = str(layer)
-            shape_text = f'{tuple(layer.input_shape)} -> {tuple(layer.output_shape)}'
-            print(f'{index:<4} | {name_text:<20} | {layer.params_count:<10} | {shape_text}')
-        print(f'Total parameters count: {self.total_params_count}')
 
     @staticmethod
     def __shuffle(X, Y):

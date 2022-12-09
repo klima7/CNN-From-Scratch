@@ -9,9 +9,6 @@ class BiasLayer(Layer):
         self.initializer = initializer
         self.bias = None
 
-    def is_input_shape_valid(self, input_shape):
-        return True
-
     def get_output_shape(self):
         return self.input_shape
 

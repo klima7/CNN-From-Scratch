@@ -1,5 +1,5 @@
 from .base import Layer
-from ..exceptions import InvalidParameterException
+from ..exceptions import InvalidParameterException, InvalidShapeException
 
 import numpy as np
 
@@ -28,10 +28,13 @@ class Pool2DLayer(Layer):
     def get_output_shape(self):
         return tuple((*self.output_slice_size, self.slices_count))
 
-    def is_input_shape_valid(self, input_shape):
-        return len(input_shape) == 3 \
-               and input_shape[0] % self.pool_size[0] == 0 \
-               and input_shape[1] % self.pool_size[1] == 0
+    def validate_input_shape(self, input_shape):
+        if len(input_shape) != 3:
+            raise InvalidShapeException(f'{self.__class__.__name__} input must be 3D')
+
+        if input_shape[0] % self.pool_size[0] != 0 or input_shape[1] % self.pool_size[1] != 0:
+            msg = f'{self.__class__.__name__} input shape {self.input_shape[:2]} must be dividable by pool size {self.pool_size}'
+            raise InvalidShapeException(msg)
 
     def propagate(self, x):
         output = np.zeros(self.output_shape, dtype=x.dtype)

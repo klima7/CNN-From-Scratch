@@ -11,9 +11,6 @@ class DropoutLayer(Layer):
         self.drop_mask = None
         self.__scale_factor = 1 / (1-self.drop_rate)
 
-    def is_input_shape_valid(self, input_shape):
-        return True
-
     def get_output_shape(self):
         return self.input_shape
 

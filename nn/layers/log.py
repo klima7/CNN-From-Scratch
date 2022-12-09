@@ -3,6 +3,7 @@ from abc import ABC
 import numpy as np
 import matplotlib.pyplot as plt
 
+from ..exceptions import InvalidShapeException
 from .base import Layer
 
 
@@ -40,8 +41,9 @@ class Log2DLayer(BaseLogLayer):
     def __init__(self, title='Log'):
         super().__init__(title)
 
-    def is_input_shape_valid(self, input_shape):
-        return len(input_shape) in [2, 3]
+    def validate_input_shape(self, input_shape):
+        if len(input_shape) not in [2, 3]:
+            raise InvalidShapeException(f'{self.__class__.__name__} input must be 2D or 3D, but is {input_shape}')
 
     def propagate(self, x):
         is_multislice = x.ndim == 3
@@ -60,8 +62,9 @@ class Log1DLayer(BaseLogLayer):
     def __init__(self, title='Log'):
         super().__init__(title)
 
-    def is_input_shape_valid(self, input_shape):
-        return len(input_shape) in [1, 2]
+    def validate_input_shape(self, input_shape):
+        if len(input_shape) not in [1, 2]:
+            raise InvalidShapeException(f'{self.__class__.__name__} input must be 1D or 2D, but is {input_shape}')
 
     def propagate(self, x):
         is_multislice = x.ndim == 2

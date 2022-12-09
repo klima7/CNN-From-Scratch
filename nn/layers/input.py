@@ -1,5 +1,6 @@
 import numpy as np
 
+from ..exceptions import InvalidLayerPositionException
 from .base import Layer
 
 
@@ -11,10 +12,11 @@ class InputLayer(Layer):
 
     @property
     def input_shape(self):
-        return self.output_shape
+        return self.shape
 
-    def is_input_shape_valid(self, input_shape):
-        return input_shape == self.input_shape
+    def validate_input_shape(self, input_shape):
+        if super().input_shape is not None:
+            raise InvalidLayerPositionException(f'{self.__class__.__name__} must be the first layer')
 
     def get_output_shape(self):
         return self.shape
