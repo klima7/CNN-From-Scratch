@@ -1,19 +1,17 @@
-from abc import ABC
-
 from .base import Layer
 from ..exceptions import InvalidParameterException
 
 import numpy as np
 
 
-class BasePoolLayer(Layer, ABC):
+class Pool2DLayer(Layer):
 
-    def __init__(self, pool_size, variant):
+    def __init__(self, pool_size, variant='max'):
         super().__init__()
 
         self.pool_size = np.array(pool_size)
         self.variant = variant
-        self.pool_function = self.get_pool_function(variant)
+        self.pool_function = self.__get_pool_function(variant)
 
     @property
     def slices_count(self):
@@ -30,40 +28,6 @@ class BasePoolLayer(Layer, ABC):
     def get_output_shape(self):
         return tuple((*self.output_slice_size, self.slices_count))
 
-    @staticmethod
-    def get_pool_function(variant):
-        if variant == 'max':
-            return np.max
-        elif variant == 'avg':
-            return np.mean
-        else:
-            raise InvalidParameterException(f'Invalid pool variant: {variant}')
-
-
-class Pool1DLayer(BasePoolLayer):
-
-    def __init__(self, pool_size=2, stride=None, variant='max'):
-        super().__init__(pool_size, stride, variant)
-
-    def is_input_shape_valid(self, input_shape):
-        return len(input_shape) == 2
-
-    def propagate(self, x):
-        output = np.zeros(self.output_shape, dtype=x.dtype)
-        for i in range(output.shape[0]):
-            group = x[i*self.stride:(i+1)*self.stride, :]
-            output[i, :] = self.pool_function(group, axis=0)
-        return output
-
-    def backpropagate(self, delta):
-        raise NotImplementedError
-
-
-class Pool2DLayer(BasePoolLayer):
-
-    def __init__(self, pool_size=(2, 2), variant='max'):
-        super().__init__(pool_size, variant)
-
     def is_input_shape_valid(self, input_shape):
         return len(input_shape) == 3
 
@@ -79,3 +43,12 @@ class Pool2DLayer(BasePoolLayer):
 
     def backpropagate(self, delta):
         return np.repeat(np.repeat(delta, self.pool_size[0], axis=0), self.pool_size[1], axis=1)
+
+    @staticmethod
+    def __get_pool_function(variant):
+        if variant == 'max':
+            return np.max
+        elif variant == 'avg':
+            return np.mean
+        else:
+            raise InvalidParameterException(f'Invalid pool variant: {variant}')
