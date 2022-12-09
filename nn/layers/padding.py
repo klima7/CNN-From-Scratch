@@ -9,7 +9,7 @@ class Padding2DLayer(Layer):
     def __init__(self, padding_size, mode='zeros'):
         super().__init__()
         self.mode = mode
-        self.padding_size = self._get_unified_padding_size(padding_size)
+        self.padding_size = Padding2DLayer.__get_unified_padding_size(padding_size)
 
     @property
     def slices_count(self):
@@ -23,8 +23,8 @@ class Padding2DLayer(Layer):
     def output_slice_size(self):
         if self.mode == 'valid':
             return self.input_slice_size
-        else:
-            return self.input_slice_size + np.array([sum(self.padding_size[0]), sum(self.padding_size[1])])
+        paddings_sum = np.array([sum(self.padding_size[0]), sum(self.padding_size[1])])
+        return self.input_slice_size + paddings_sum
 
     def is_input_shape_valid(self, input_shape):
         return len(input_shape) == 3
@@ -33,13 +33,15 @@ class Padding2DLayer(Layer):
         return tuple((*self.output_slice_size, self.slices_count))
 
     def propagate(self, x):
-        return self._apply_padding(x, [*self.padding_size, (0, 0)])
+        padding_size = [*self.padding_size, (0, 0)]
+        return Padding2DLayer.__add_padding(x, padding_size, self.mode)
 
     def backpropagate(self, delta):
-        return self._remove_padding(delta, [*self.padding_size, (0, 0)])
+        padding_size = [*self.padding_size, (0, 0)]
+        return Padding2DLayer.__remove_padding(delta, padding_size)
 
     @staticmethod
-    def _get_unified_padding_size(size):
+    def __get_unified_padding_size(size):
         if isinstance(size, int):
             return (size, size), (size, size)
         elif isinstance(size, tuple):
@@ -48,19 +50,21 @@ class Padding2DLayer(Layer):
             elif isinstance(size[0], tuple):
                 return size
 
-    def _apply_padding(self, array, axes_pad_width):
-        if self.mode == 'valid':
+    @staticmethod
+    def __add_padding(array, padding_sizes, mode):
+        if mode == 'valid':
             return np.array(array)
-        elif self.mode == 'zeros':
-            return np.pad(array, axes_pad_width, mode='constant', constant_values=0)
-        elif self.mode == 'edge':
-            return np.pad(array, axes_pad_width, mode='edge')
+        elif mode == 'zeros':
+            return np.pad(array, padding_sizes, mode='constant', constant_values=0)
+        elif mode == 'edge':
+            return np.pad(array, padding_sizes, mode='edge')
         else:
-            raise InvalidParameterException(f'Invalid padding mode: {self.mode}')
+            raise InvalidParameterException(f'Invalid padding mode: {mode}')
 
     @staticmethod
-    def _remove_padding(array, paddings):
-        reversed_padding = []
-        for padding, dim in zip(paddings, array.shape):
-            reversed_padding.append(slice(padding[0], dim - padding[1]))
-        return array[tuple(reversed_padding)]
+    def __remove_padding(array, paddings_size):
+        slices = []
+        for padding_size, dim in zip(paddings_size, array.shape):
+            s = slice(padding_size[0], dim - padding_size[1])
+            slices.append(s)
+        return array[tuple(slices)]
