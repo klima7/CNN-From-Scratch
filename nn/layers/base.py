@@ -29,20 +29,34 @@ class Layer(ABC):
         self.output_shape = np.array(self.get_output_shape())
         self.initialize()
 
-    def propagate_with_validation(self, x):
+    def propagate_save(self, x):
         if not np.array_equal(x.shape, self.input_shape):
-            raise InvalidShapeException(f'Array with invalid shape passed to propagate method. Should be {self.input_shape}, but is {x.shape}')
+            msg = f'Array with invalid shape passed to propagate method. ' \
+                  f'Should be {self.input_shape}, but is {x.shape}'
+            raise InvalidShapeException(msg)
+
         propagated_data = self.propagate(x)
+
         if not np.array_equal(propagated_data.shape, self.output_shape):
-            raise InvalidShapeException(f'Array with invalid shape returned from propagate method. Should be {self.output_shape}, but is {propagated_data.shape}')
+            msg = f'Array with invalid shape returned from propagate method. ' \
+                  f'Should be {self.output_shape}, but is {propagated_data.shape}'
+            raise InvalidShapeException(msg)
+
         return propagated_data
 
-    def backpropagate_with_validation(self, delta):
+    def backpropagate_save(self, delta):
         if not np.array_equal(delta.shape, self.output_shape):
-            raise InvalidShapeException(f'Array with invalid shape passed to backpropagate method. Should be {self.output_shape}, but is {delta.shape}')
+            msg = f'Array with invalid shape passed to backpropagate method. ' \
+                  f'Should be {self.output_shape}, but is {delta.shape}'
+            raise InvalidShapeException(msg)
+
         prev_delta = self.backpropagate(delta)
+
         if not np.array_equal(prev_delta.shape, self.input_shape):
-            raise InvalidShapeException(f'Backpropagate method returned array with invalid shape. Should be {self.input_shape}, but is {prev_delta.shape}')
+            msg = f'Backpropagate method returned array with invalid shape. ' \
+                  f'Should be {self.input_shape}, but is {prev_delta.shape}'
+            raise InvalidShapeException(msg)
+
         return prev_delta
 
     def initialize(self):

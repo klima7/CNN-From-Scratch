@@ -1,13 +1,10 @@
-import sys
-import traceback
-
 import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.preprocessing import OneHotEncoder
 from tqdm import tqdm
 
 from .losses import MseLoss
-from .exceptions import LayerConnectingException
+from .exceptions import LayerConnectingException, PropagationException, BackpropagationException
 
 
 class NeuralNetwork(BaseEstimator, ClassifierMixin):
@@ -35,19 +32,17 @@ class NeuralNetwork(BaseEstimator, ClassifierMixin):
     def output_layer(self):
         return self.layers[-1]
 
-    def fit(self, X, Y, **kwargs):
+    def fit(self, xs, ys, **kwargs):
         self.epochs = kwargs.get('epochs', self.DEFAULT_EPOCHS)
         self.learning_rate = kwargs.get('learning_rate', self.DEFAULT_LEARNING_RATE)
 
         self.training = True
-
         for epoch_no in range(self.epochs):
-            self.__learn_epoch(X, Y, epoch_no+1)
-
+            self.__learn_epoch(xs, ys, epoch_no + 1)
         self.training = False
 
-    def predict(self, X):
-        predictions = [self.__propagate(x) for x in X]
+    def predict(self, xs):
+        predictions = [self.__propagate(x) for x in xs]
         return np.array(predictions)
 
     def summary(self):
@@ -71,10 +66,10 @@ class NeuralNetwork(BaseEstimator, ClassifierMixin):
         except Exception as e:
             raise e from LayerConnectingException(index, layer)
 
-    def __learn_epoch(self, X, Y, epoch_no):
-        Xs, Ys = self.__shuffle(X, Y)
+    def __learn_epoch(self, xs, ys, epoch_no):
+        xs, ys = self.__shuffle(xs, ys)
 
-        for x, y in tqdm(zip(Xs, Ys), total=len(X), desc=f'Epoch {epoch_no}'):
+        for x, y in tqdm(zip(xs, ys), total=len(xs), desc=f'Epoch {epoch_no}'):
             self.__learn_single(x, y)
 
     def __learn_single(self, x, y):
@@ -83,18 +78,24 @@ class NeuralNetwork(BaseEstimator, ClassifierMixin):
         self.__backpropagate(delta)
 
     def __propagate(self, x):
-        for layer in self.layers:
-            x = layer.propagate_with_validation(x)
+        for layer_no, layer in enumerate(self.layers):
+            try:
+                x = layer.propagate_save(x)
+            except Exception as e:
+                raise e from PropagationException(layer_no, layer)
         return x
 
     def __backpropagate(self, delta):
-        for layer in reversed(self.layers):
-            delta = layer.backpropagate_with_validation(delta)
+        for layer_no, layer in reversed(list(enumerate(self.layers))):
+            try:
+                delta = layer.backpropagate_save(delta)
+            except Exception as e:
+                raise e from BackpropagationException(layer_no, layer)
 
     @staticmethod
-    def __shuffle(X, Y):
-        permutation = np.random.permutation(len(X))
-        return X[permutation], Y[permutation]
+    def __shuffle(xs, ys):
+        permutation = np.random.permutation(len(xs))
+        return xs[permutation], ys[permutation]
 
 
 class BinaryNNClassifier(NeuralNetwork):
@@ -103,8 +104,8 @@ class BinaryNNClassifier(NeuralNetwork):
         super().__init__(layers, loss)
         self.encoder = OneHotEncoder()
 
-    def predict(self, X):
-        output = self.input_layer.propagate(X)
+    def predict(self, xs):
+        output = self.input_layer.propagate(xs)
         assert output.shape[1] == 1
         output = output.flatten()
         labels = (output > 0.5).astype(np.int_)
@@ -124,13 +125,13 @@ class MulticlassNNClassifier(NeuralNetwork):
         super().__init__(layers, loss)
         self.encoder = OneHotEncoder()
 
-    def fit(self, X, Y, **kwargs):
-        encoded_Y = self.encoder.fit_transform(Y.reshape(-1, 1)).toarray()
+    def fit(self, xs, ys, **kwargs):
+        encoded_Y = self.encoder.fit_transform(ys.reshape(-1, 1)).toarray()
         print(encoded_Y.shape)
-        super().fit(X, encoded_Y, **kwargs)
+        super().fit(xs, encoded_Y, **kwargs)
 
-    def predict(self, X):
-        output = super().predict(X)
+    def predict(self, xs):
+        output = super().predict(xs)
         labels_no = np.argmax(output, axis=1)
         labels = np.take(self.encoder.categories_, labels_no)
         return labels
