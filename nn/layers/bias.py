@@ -4,9 +4,9 @@ from .base import Layer
 
 class BiasLayer(Layer):
 
-    def __init__(self, initializer=RandomUniformInitializer(-0.5, 0.5)):
+    def __init__(self, initializer=None):
         super().__init__()
-        self.initializer = initializer
+        self.initializer = initializer or RandomUniformInitializer(-0.5, 0.5)
         self.bias = None
 
     def get_output_shape(self):
