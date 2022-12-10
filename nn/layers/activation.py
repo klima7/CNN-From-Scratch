@@ -1,11 +1,12 @@
 from .base import Layer
+from ..activations import get_activation_from_name
 
 
 class ActivationLayer(Layer):
 
     def __init__(self, activation):
         super().__init__()
-        self.activation = activation
+        self.activation = get_activation_from_name(activation)
         self.__state = None
 
     def get_output_shape(self):
