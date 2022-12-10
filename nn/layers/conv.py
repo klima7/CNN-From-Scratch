@@ -11,8 +11,12 @@ class Conv2DLayer(Layer):
     def __init__(self, filters_count, kernel_size, stride=(1, 1), initializer=None):
         super().__init__()
 
-        if not np.all(np.mod(kernel_size, 2) != 0):
-            raise InvalidParameterException('kernel size must be an odd number in each dimension')
+        kernel_size = np.broadcast_to(kernel_size, (2,))
+        stride = np.broadcast_to(stride, (2,))
+
+        if kernel_size[0] % 2 == 0 or kernel_size[1] % 2 == 0:
+            msg = f'kernel size must be an odd, but it {kernel_size}'
+            raise InvalidParameterException(msg)
 
         self.filters_count = filters_count
         self.kernel_size = np.array(kernel_size)
@@ -87,7 +91,7 @@ class Conv2DLayer(Layer):
         return new_delta
 
     def __update_weights(self, delta):
-        updates = []
+        updates = np.zeros_like(self.kernels)
         for slice_no in range(self.output_slices_count):
             kernel = delta[..., slice_no, np.newaxis]
             kernel = dilate(kernel, self.stride)
@@ -100,7 +104,6 @@ class Conv2DLayer(Layer):
                 dilation=np.array([1, 1]),
                 full_conv=False
             )
-            updates.append(update)
+            updates[slice_no, ...] = update
 
-        updates = np.array(updates)
         self.kernels += self.nn.learning_rate * updates

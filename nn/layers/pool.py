@@ -9,7 +9,7 @@ class Pool2DLayer(Layer):
     def __init__(self, pool_size, variant='max'):
         super().__init__()
 
-        self.pool_size = np.array(pool_size)
+        self.pool_size = np.broadcast_to(pool_size, (2,))
         self.variant = variant
         self.pool_function = self.__get_pool_function(variant)
 
