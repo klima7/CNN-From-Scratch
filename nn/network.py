@@ -8,12 +8,9 @@ from .exceptions import LayerConnectingException, PropagationException, Backprop
 
 class Sequential(BaseEstimator, ClassifierMixin):
 
-    DEFAULT_EPOCHS = 1
-    DEFAULT_LEARNING_RATE = 0.001
-
-    def __init__(self, layers, loss=None):
+    def __init__(self, layers):
         self.layers = layers
-        self.loss = loss or MseLoss()
+        self.loss = None
         self.epochs = None
         self.learning_rate = None
         self.training = False
@@ -32,16 +29,16 @@ class Sequential(BaseEstimator, ClassifierMixin):
         self.layers.append(layer)
         self.is_build = False
 
-    def build(self):
+    def build(self, loss=None):
+        self.loss = loss or MseLoss()
         self.__connect_layers()
         self.total_params_count = sum([layer.params_count for layer in self.layers])
         self.is_build = True
 
-    def fit(self, xs, ys, **kwargs):
+    def fit(self, xs, ys, epochs=1, learning_rate=0.001):
         self.__assert_build()
-
-        self.epochs = kwargs.get('epochs', self.DEFAULT_EPOCHS)
-        self.learning_rate = kwargs.get('learning_rate', self.DEFAULT_LEARNING_RATE)
+        self.epochs = epochs
+        self.learning_rate = learning_rate
 
         self.training = True
         for epoch_no in range(self.epochs):
