@@ -74,12 +74,11 @@ def get_dilated_kernel_size(kernel_size, dilation):
     return (kernel_size - 1) * dilation + 1
 
 
+@njit
 def dilate(array, dilation):
     array_size = np.array(array.shape[:2])
     array_depth = array.shape[2]
     dilated_size = get_dilated_kernel_size(array_size, dilation)
     dilated_array = np.zeros((dilated_size[0], dilated_size[1], array_depth), dtype=array.dtype)
-    slice0 = np.s_[0::dilation[0]]
-    slice1 = np.s_[0::dilation[1]]
-    dilated_array[slice0, slice1, :] = array
+    dilated_array[0::dilation[0], 0::dilation[1], :] = array
     return dilated_array
