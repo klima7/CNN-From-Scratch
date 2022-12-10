@@ -41,9 +41,9 @@ class Log2DLayer(BaseLogLayer):
     def __init__(self, title='Log'):
         super().__init__(title)
 
-    def validate_input_shape(self, input_shape):
-        if len(input_shape) not in [2, 3]:
-            raise InvalidShapeException(f'{self.__class__.__name__} input must be 2D or 3D, but is {input_shape}')
+    def validate_input_shape(self):
+        if len(self.input_shape) not in [2, 3]:
+            raise InvalidShapeException(f'{self.__class__.__name__} input must be 2D or 3D, but is {self.input_shape}')
 
     def propagate(self, x):
         is_multislice = x.ndim == 3
@@ -62,9 +62,9 @@ class Log1DLayer(BaseLogLayer):
     def __init__(self, title='Log'):
         super().__init__(title)
 
-    def validate_input_shape(self, input_shape):
-        if len(input_shape) not in [1, 2]:
-            raise InvalidShapeException(f'{self.__class__.__name__} input must be 1D or 2D, but is {input_shape}')
+    def validate_input_shape(self):
+        if len(self.input_shape) not in [1, 2]:
+            raise InvalidShapeException(f'{self.__class__.__name__} input must be 1D or 2D, but is {self.input_shape}')
 
     def propagate(self, x):
         is_multislice = x.ndim == 2

@@ -57,9 +57,9 @@ class Conv2DLayer(Layer):
         self.kernels = np.array(kernels)
         self.params_count = self.kernels.size
 
-    def validate_input_shape(self, input_shape):
-        if len(input_shape) != 3:
-            raise InvalidShapeException(f'{self.__class__.__name__} input must be 3D, but is {input_shape}')
+    def validate_input_shape(self):
+        if len(self.input_shape) != 3:
+            raise InvalidShapeException(f'{self.__class__.__name__} input must be 3D, but is {self.input_shape}')
 
     def propagate(self, x):
         self.x = x

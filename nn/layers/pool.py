@@ -28,11 +28,11 @@ class Pool2DLayer(Layer):
     def get_output_shape(self):
         return tuple((*self.output_slice_size, self.slices_count))
 
-    def validate_input_shape(self, input_shape):
-        if len(input_shape) != 3:
+    def validate_input_shape(self):
+        if len(self.input_shape) != 3:
             raise InvalidShapeException(f'{self.__class__.__name__} input must be 3D')
 
-        if input_shape[0] % self.pool_size[0] != 0 or input_shape[1] % self.pool_size[1] != 0:
+        if self.input_shape[0] % self.pool_size[0] != 0 or self.input_shape[1] % self.pool_size[1] != 0:
             msg = f'{self.__class__.__name__} input shape {self.input_shape[:2]} must be dividable by pool size {self.pool_size}'
             raise InvalidShapeException(msg)
 

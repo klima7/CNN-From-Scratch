@@ -12,9 +12,9 @@ class DenseLayer(Layer):
         self.input_data = None
         self.weights = None
 
-    def validate_input_shape(self, input_shape):
-        if len(input_shape) != 1:
-            raise InvalidShapeException(f'{self.__class__.__name__} input must be 1D, but is {input_shape}')
+    def validate_input_shape(self):
+        if len(self.input_shape) != 1:
+            raise InvalidShapeException(f'{self.__class__.__name__} input must be 1D, but is {self.input_shape}')
 
     def get_output_shape(self):
         return tuple((self.neurons_count,))

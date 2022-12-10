@@ -25,7 +25,7 @@ class Layer(ABC):
         self.nn = nn
         self.prev_layer = prev_layer
         self.next_layer = next_layer
-        self.validate_input_shape(self.input_shape)
+        self.validate_input_shape()
         self.output_shape = np.array(self.get_output_shape())
         self.initialize()
 
@@ -48,7 +48,7 @@ class Layer(ABC):
     def initialize(self):
         pass
 
-    def validate_input_shape(self, input_shape):
+    def validate_input_shape(self):
         pass
 
     @abstractmethod

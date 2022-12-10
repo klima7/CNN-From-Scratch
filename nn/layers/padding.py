@@ -26,9 +26,9 @@ class Padding2DLayer(Layer):
         paddings_sum = np.array([sum(self.padding_size[0]), sum(self.padding_size[1])])
         return self.input_slice_size + paddings_sum
 
-    def validate_input_shape(self, input_shape):
-        if len(input_shape) != 3:
-            raise InvalidShapeException(f'{self.__class__.__name__} input must be 3D, but is {input_shape}')
+    def validate_input_shape(self):
+        if len(self.input_shape) != 3:
+            raise InvalidShapeException(f'{self.__class__.__name__} input must be 3D, but is {self.input_shape}')
 
     def get_output_shape(self):
         return tuple((*self.output_slice_size, self.slices_count))

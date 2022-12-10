@@ -14,7 +14,7 @@ class InputLayer(Layer):
     def input_shape(self):
         return self.shape
 
-    def validate_input_shape(self, input_shape):
+    def validate_input_shape(self):
         if super().input_shape is not None:
             raise InvalidLayerPositionException(f'{self.__class__.__name__} must be the first layer')
 
