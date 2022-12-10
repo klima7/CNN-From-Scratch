@@ -1,13 +1,12 @@
 import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin
-from sklearn.preprocessing import OneHotEncoder
 from tqdm import tqdm
 
 from .losses import MseLoss
-from .exceptions import LayerConnectingException, PropagationException, BackpropagationException
+from .exceptions import LayerConnectingException, PropagationException, BackpropagationException, NetworkException
 
 
-class NeuralNetwork(BaseEstimator, ClassifierMixin):
+class Sequential(BaseEstimator, ClassifierMixin):
 
     DEFAULT_EPOCHS = 1
     DEFAULT_LEARNING_RATE = 0.001
@@ -15,14 +14,11 @@ class NeuralNetwork(BaseEstimator, ClassifierMixin):
     def __init__(self, layers, loss=None):
         self.layers = layers
         self.loss = loss or MseLoss()
-
         self.epochs = None
         self.learning_rate = None
         self.training = False
-
-        self.__connect(layers)
-
-        self.total_params_count = sum([layer.params_count for layer in self.layers])
+        self.total_params_count = 0
+        self.is_build = False
 
     @property
     def input_layer(self):
@@ -32,7 +28,18 @@ class NeuralNetwork(BaseEstimator, ClassifierMixin):
     def output_layer(self):
         return self.layers[-1]
 
+    def add(self, layer):
+        self.layers.append(layer)
+        self.is_build = False
+
+    def build(self):
+        self.__connect_layers()
+        self.total_params_count = sum([layer.params_count for layer in self.layers])
+        self.is_build = True
+
     def fit(self, xs, ys, **kwargs):
+        self.__assert_build()
+
         self.epochs = kwargs.get('epochs', self.DEFAULT_EPOCHS)
         self.learning_rate = kwargs.get('learning_rate', self.DEFAULT_LEARNING_RATE)
 
@@ -42,22 +49,26 @@ class NeuralNetwork(BaseEstimator, ClassifierMixin):
         self.training = False
 
     def predict(self, xs):
+        self.__assert_build()
         predictions = [self.__propagate(x) for x in xs]
         return np.array(predictions)
 
     def summary(self):
-        print(f"{'NO':<4} | {'NAME':<20} | {'PARAMS':10} | SHAPE")
+        print(f"{'NO':<4} | {'NAME':<20} | {'PARAMS':10} | {'INPUT':15} | {'OUTPUT':15}")
         for index, layer in enumerate(self.layers):
             name_text = str(layer)
-            shape_text = f'{tuple(layer.input_shape)} -> {tuple(layer.output_shape)}'
-            print(f'{index:<4} | {name_text:<20} | {layer.params_count:<10} | {shape_text}')
-        print(f'Total parameters count: {self.total_params_count}')
+            params_text = str(layer.params_count) if self.is_build else '?'
+            input_text = f'{tuple(layer.input_shape)}' if self.is_build else '?'
+            output_text = f'{tuple(layer.output_shape)}' if self.is_build else '?'
+            print(f'{index:<4} | {name_text:<20} | {params_text:<10} | {input_text:<15} | {output_text:<15}')
+        total_params_text = str(self.total_params_count) if self.is_build else '?'
+        print(f'\nTotal parameters count: {total_params_text}')
 
-    def __connect(self, layers):
-        for i in range(len(layers)):
-            self.__connect_single(layers, i)
+    def __connect_layers(self):
+        for i in range(len(self.layers)):
+            self.__connect_single_layer(self.layers, i)
 
-    def __connect_single(self, layers, index):
+    def __connect_single_layer(self, layers, index):
         layer = layers[index]
         prev_layer = layers[index - 1] if index - 1 >= 0 else None
         next_layer = layers[index + 1] if index + 1 < len(layers) else None
@@ -92,46 +103,11 @@ class NeuralNetwork(BaseEstimator, ClassifierMixin):
             except Exception as e:
                 raise e from BackpropagationException(layer_no, layer)
 
+    def __assert_build(self):
+        if not self.is_build:
+            raise NetworkException('Network must be build to perform requested operation')
+
     @staticmethod
     def __shuffle(xs, ys):
         permutation = np.random.permutation(len(xs))
         return xs[permutation], ys[permutation]
-
-
-class BinaryNNClassifier(NeuralNetwork):
-
-    def __init__(self, layers, loss=None):
-        super().__init__(layers, loss)
-        self.encoder = OneHotEncoder()
-
-    def predict(self, xs):
-        output = self.input_layer.propagate(xs)
-        assert output.shape[1] == 1
-        output = output.flatten()
-        labels = (output > 0.5).astype(np.int_)
-        return labels
-
-    def predict_proba(self, X):
-        output = super().predict(X)
-        output = output.flatten()
-        nom = np.exp(output)
-        denom = np.sum(nom)
-        return nom / denom
-
-
-class MulticlassNNClassifier(NeuralNetwork):
-
-    def __init__(self, layers, loss=None):
-        super().__init__(layers, loss)
-        self.encoder = OneHotEncoder()
-
-    def fit(self, xs, ys, **kwargs):
-        encoded_Y = self.encoder.fit_transform(ys.reshape(-1, 1)).toarray()
-        print(encoded_Y.shape)
-        super().fit(xs, encoded_Y, **kwargs)
-
-    def predict(self, xs):
-        output = super().predict(xs)
-        labels_no = np.argmax(output, axis=1)
-        labels = np.take(self.encoder.categories_, labels_no)
-        return labels
