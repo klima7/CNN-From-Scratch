@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin
 from tqdm import tqdm
 
-from .losses import MseLoss
+from .losses import get_loss
 from .exceptions import LayerConnectingException, PropagationException, BackpropagationException, NetworkException
 
 
@@ -29,8 +29,8 @@ class Sequential(BaseEstimator, ClassifierMixin):
         self.layers.append(layer)
         self.is_build = False
 
-    def build(self, loss=None):
-        self.loss = loss or MseLoss()
+    def build(self, loss='mse'):
+        self.loss = get_loss(loss)
         self.__connect_layers()
         self.total_params_count = sum([layer.params_count for layer in self.layers])
         self.is_build = True
