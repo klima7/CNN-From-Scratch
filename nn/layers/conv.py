@@ -34,10 +34,6 @@ class Conv2DLayer(Layer):
         return self.input_shape[:-1]
 
     @property
-    def output_slices_count(self):
-        return self.filters_count
-
-    @property
     def output_slice_size(self):
         return get_convolution_output_size(
             data_size=tuple(self.input_slice_size),
@@ -48,14 +44,14 @@ class Conv2DLayer(Layer):
         )
 
     def get_output_shape(self):
-        return tuple((*self.output_slice_size, self.output_slices_count))
+        return tuple((*self.output_slice_size, self.filters_count))
 
     def initialize(self):
         initializer_kwargs = {
             'fan_in': np.prod(self.kernel_size) * self.input_slices_count,
-            'fan_out': np.prod(self.kernel_size) * self.output_slices_count
+            'fan_out': np.prod(self.kernel_size) * self.filters_count
         }
-        kernels_shape = (self.output_slices_count, *self.kernel_size, self.input_slices_count)
+        kernels_shape = (self.filters_count, *self.kernel_size, self.input_slices_count)
         self.kernels = self.initializer(kernels_shape, **initializer_kwargs)
         self.params_count = self.kernels.size
 
@@ -92,7 +88,7 @@ class Conv2DLayer(Layer):
 
     def __update_weights(self, delta):
         updates = np.zeros_like(self.kernels)
-        for slice_no in range(self.output_slices_count):
+        for slice_no in range(self.filters_count):
             kernel = delta[..., slice_no, np.newaxis]
             kernel = dilate(kernel, self.stride)
             kernels = np.repeat(kernel[np.newaxis, ...], self.input_slices_count, axis=0)
