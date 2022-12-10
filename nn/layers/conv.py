@@ -3,12 +3,12 @@ import numpy as np
 from .base import Layer
 from ..convolution import convolve, get_convolution_output_size, dilate
 from ..exceptions import InvalidParameterException, InvalidShapeException
-from ..initializers import GlorotUniformInitialization
+from ..initializers import get_initializer
 
 
 class Conv2DLayer(Layer):
 
-    def __init__(self, filters_count, kernel_size, stride=(1, 1), initializer=None):
+    def __init__(self, filters_count, kernel_size, stride=(1, 1), initializer='glorot'):
         super().__init__()
 
         kernel_size = np.broadcast_to(kernel_size, (2,))
@@ -21,7 +21,7 @@ class Conv2DLayer(Layer):
         self.filters_count = filters_count
         self.kernel_size = np.array(kernel_size)
         self.stride = np.array(stride)
-        self.initializer = initializer or GlorotUniformInitialization()
+        self.initializer = get_initializer(initializer)
         self.kernels = None
         self.__x = None
 

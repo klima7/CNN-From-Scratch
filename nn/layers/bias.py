@@ -1,12 +1,12 @@
-from ..initializers import RandomUniformInitializer
+from ..initializers import get_initializer
 from .base import Layer
 
 
 class BiasLayer(Layer):
 
-    def __init__(self, initializer=None):
+    def __init__(self, initializer='uniform'):
         super().__init__()
-        self.initializer = initializer or RandomUniformInitializer(-0.5, 0.5)
+        self.initializer = get_initializer(initializer)
         self.bias = None
 
     def get_output_shape(self):

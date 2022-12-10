@@ -1,14 +1,14 @@
-from ..initializers import GlorotUniformInitialization
+from ..initializers import get_initializer
 from ..exceptions import InvalidShapeException
 from .base import Layer
 
 
 class DenseLayer(Layer):
 
-    def __init__(self, neurons_count, initializer=None):
+    def __init__(self, neurons_count, initializer='glorot'):
         super().__init__()
         self.neurons_count = neurons_count
-        self.initializer = initializer or GlorotUniformInitialization()
+        self.initializer = get_initializer(initializer)
         self.weights = None
         self.__x = None
 
