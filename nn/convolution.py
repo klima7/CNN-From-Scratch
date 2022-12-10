@@ -4,11 +4,11 @@ import numpy as np
 from numba import njit
 
 
-def convolve(tensor, kernels, stride, dilation, full=False):
+def convolve(data, kernels, stride, dilation, full_conv=False):
     kernel_size = np.array(kernels.shape[1:-1])
-    output_slice_size = get_convolution_output_size(tensor.shape[:-1], kernel_size, stride, dilation, full)
+    output_slice_size = get_convolution_output_size(data.shape[:-1], kernel_size, stride, dilation, full_conv)
 
-    sections = get_convolution_sections(tensor, kernel_size, stride, dilation, full)
+    sections = get_convolution_sections(data, kernel_size, stride, dilation, full_conv)
     flatten_kernels = kernels.copy().reshape((len(kernels), -1))
     flatten_convoluted = sections @ flatten_kernels.T
     convoluted = flatten_convoluted.reshape((output_slice_size[0], output_slice_size[1], len(kernels)))
@@ -16,15 +16,15 @@ def convolve(tensor, kernels, stride, dilation, full=False):
 
 
 @njit
-def get_convolution_sections(data, kernel_size, stride, dilation, full):
+def get_convolution_sections(data, kernel_size, stride, dilation, full_conv):
     dilated_kernel_size = get_dilated_kernel_size(kernel_size, dilation)
-    output_slice_size = get_convolution_output_size(data.shape[:-1], kernel_size, stride, dilation, full)
+    output_slice_size = get_convolution_output_size(data.shape[:-1], kernel_size, stride, dilation, full_conv)
 
     sections_count = np.prod(output_slice_size)
     kernel_length = np.prod(kernel_size)
     sections = np.zeros((sections_count, kernel_length * data.shape[-1]))
 
-    offset = -dilated_kernel_size+1 if full else np.array([0, 0])
+    offset = -dilated_kernel_size+1 if full_conv else np.array([0, 0])
 
     anchors0 = [i * stride[0] + offset[0] for i in range(output_slice_size[0])]
     anchors1 = [i * stride[1] + offset[1] for i in range(output_slice_size[1])]
@@ -56,13 +56,12 @@ def get_single_convolution_section(data, pos, kernel_size, dilation):
 
 
 @njit
-def get_convolution_output_size(data_size, kernel_size, stride, dilation, full):
-    # print(type(data_size), type(kernel_size), type(stride), type(dilation))
+def get_convolution_output_size(data_size, kernel_size, stride, dilation, full_conv):
     data_size = np.array(data_size)
     dilated_kernel_size = get_dilated_kernel_size(kernel_size, dilation)
 
     available_space = (data_size - dilated_kernel_size) + 1
-    if full:
+    if full_conv:
         available_space += 2 * kernel_size - 2
 
     size_float = available_space / stride
