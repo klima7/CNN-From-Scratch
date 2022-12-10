@@ -21,11 +21,11 @@ class DenseLayer(Layer):
 
     def initialize(self):
         shape = (self.neurons_count, self.input_shape[0])
-        kwargs = {
+        initializer_kwargs = {
             'fan_in': self.input_shape[0],
             'fan_out': self.output_shape[0]
         }
-        self.weights = self.initializer(shape, **kwargs)
+        self.weights = self.initializer(shape, **initializer_kwargs)
         self.params_count = self.weights.size
 
     def propagate(self, x):

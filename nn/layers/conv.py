@@ -47,14 +47,12 @@ class Conv2DLayer(Layer):
         return tuple((*self.output_slice_size, self.output_slices_count))
 
     def initialize(self):
-        kwargs = {
+        initializer_kwargs = {
             'fan_in': np.prod(self.kernel_size) * self.input_slices_count,
             'fan_out': np.prod(self.kernel_size) * self.output_slices_count
         }
-        normalized_kernel_size = np.array(self.kernel_size).flatten()     # 3 -> (3,)
-        shape = (*normalized_kernel_size, self.input_slices_count)
-        kernels = [self.initializer(shape, **kwargs) for _ in range(self.output_slices_count)]
-        self.kernels = np.array(kernels)
+        kernels_shape = (self.output_slices_count, *self.kernel_size, self.input_slices_count)
+        self.kernels = self.initializer(kernels_shape, **initializer_kwargs)
         self.params_count = self.kernels.size
 
     def validate_input_shape(self):
@@ -91,9 +89,9 @@ class Conv2DLayer(Layer):
     def __update_weights(self, delta):
         updates = []
         for slice_no in range(self.output_slices_count):
-            slice_delta = delta[..., slice_no, np.newaxis]
-            slice_delta = dilate(slice_delta, self.stride)
-            kernels = np.array([slice_delta for _ in range(self.input_slices_count)])
+            kernel = delta[..., slice_no, np.newaxis]
+            kernel = dilate(kernel, self.stride)
+            kernels = np.repeat(kernel[np.newaxis, ...], self.input_slices_count, axis=0)
             kernels = np.transpose(kernels, (3, 1, 2, 0))
             update = convolve(
                 data=self.__x,
