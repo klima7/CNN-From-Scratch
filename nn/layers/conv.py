@@ -1,7 +1,7 @@
 import numpy as np
 
 from .base import Layer
-from ..convolution import convolve, get_convolution_output_size, dilate
+from ..convolution import convolve, get_convolution_output_size, get_dilated_kernel_size, dilate
 from ..exceptions import InvalidParameterException, InvalidShapeException
 from ..initializers import get_initializer
 
@@ -58,6 +58,18 @@ class Conv2DLayer(Layer):
     def validate_input_shape(self):
         if len(self.input_shape) != 3:
             raise InvalidShapeException(f'{self.__class__.__name__} input must be 3D, but is {self.input_shape}')
+
+        expected_input_size = get_convolution_output_size(
+            data_size=tuple(get_dilated_kernel_size(self.output_slice_size, self.stride)),
+            kernel_size=self.kernel_size,
+            stride=np.array([1, 1]),
+            dilation=np.array([1, 1]),
+            full_conv=True
+        )
+
+        if not np.array_equal(expected_input_size, self.input_shape[:2]):
+            msg = f'{self.__class__.__name__} parameters does not match to input data shape {self.input_shape}'
+            raise InvalidShapeException(msg)
 
     def propagate(self, x):
         self.__x = x
