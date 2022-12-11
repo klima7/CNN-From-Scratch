@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
-from .exceptions import InvalidLabelsException, InvalidParameterException
+from .exceptions import InvalidParameterException
 
 
 class Loss(ABC):
@@ -22,7 +22,6 @@ class MseLoss(Loss):
 
 
 class CrossEntropyLoss(Loss):
-    # This loss uses simplified formula assessing that last layer is using softmax activation
 
     def __call__(self, prediction, target):
         self.__ensure_is_onehot(target)
@@ -35,7 +34,7 @@ class CrossEntropyLoss(Loss):
     def __ensure_is_onehot(target):
         ok = np.all(np.logical_or(target == 0, target == 1)) and np.sum(target) == 1
         if not ok:
-            raise InvalidLabelsException('Softmax requires labels to be onehot encoded')
+            raise InvalidParameterException('Softmax requires labels to be onehot encoded')
 
     @staticmethod
     def __get_one_position(target):
