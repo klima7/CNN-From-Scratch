@@ -43,24 +43,22 @@ class Sequential(BaseEstimator, ClassifierMixin):
         self.__history.clear()
         self.is_build = True
 
-    def fit(self, xs, ys, epochs=1, learning_rate=0.001, validation_data=None, verbose=True):
+    def fit(self, xs, ys, epochs=1, learning_rate=0.001, validation_data=None):
         self.__assert_build()
         self.epochs = epochs
         self.learning_rate = learning_rate
 
         self.training = True
         for epoch_no in range(self.epochs):
-            self.__learn_epoch(xs, ys, epoch_no + 1, verbose=verbose)
-            self.__perform_validation(validation_data, verbose=verbose)
+            self.__learn_epoch(xs, ys, epoch_no + 1)
+            self.__perform_validation(validation_data)
         self.training = False
 
         return self.__history
 
-    def predict(self, xs, verbose=True):
+    def predict(self, xs):
         self.__assert_build()
-        iterator = iter(xs)
-        if verbose:
-            iterator = tqdm(xs, desc='Predict', total=len(xs))
+        iterator = tqdm(xs, desc='Predict', total=len(xs))
         predictions = [self.__propagate(x) for x in iterator]
         return np.array(predictions)
 
@@ -88,22 +86,18 @@ class Sequential(BaseEstimator, ClassifierMixin):
         except Exception as e:
             raise e from LayerConnectingException(index, layer)
 
-    def __learn_epoch(self, xs, ys, epoch_no, verbose=True):
+    def __learn_epoch(self, xs, ys, epoch_no):
         xs, ys = self.__shuffle(xs, ys)
         losses_sum = 0
         avg_loss = 0
 
-        iterator = enumerate(zip(xs, ys))
-        if verbose:
-            iterator = tqdm(iterator, total=len(xs), desc=f'Epoch {epoch_no:<2}')
+        iterator = tqdm(enumerate(zip(xs, ys)), total=len(xs), desc=f'Epoch {epoch_no:<2}')
 
         for i, (x, y) in iterator:
             loss = self.__learn_single(x, y)
             losses_sum += loss
             avg_loss = losses_sum / (i+1)
-
-            if verbose:
-                iterator.set_postfix_str(f'loss={avg_loss:.3f}')
+            iterator.set_postfix_str(f'loss={avg_loss:.3f}')
 
         self.__history['loss'].append(avg_loss)
 
@@ -129,26 +123,22 @@ class Sequential(BaseEstimator, ClassifierMixin):
             except Exception as e:
                 raise e from BackpropagationException(layer_no, layer)
 
-    def __perform_validation(self, validation_data, verbose=True):
+    def __perform_validation(self, validation_data):
         val_xs, val_ys = validation_data
-        iterator = iter(val_xs)
-        if verbose:
-            iterator = tqdm(val_xs, desc='Validate', leave=False)
+        iterator = tqdm(val_xs, desc='Validate', leave=False)
         predictions = np.array([self.__propagate(x) for x in iterator])
 
         metrics_results = self.__calculate_metrics(predictions, val_ys)
-
         for metric_name, metric_value in metrics_results.items():
             self.__history[metric_name].append(metric_value)
 
-        if verbose:
-            tqdm(
-                [],
-                desc='Validate',
-                initial=len(val_xs),
-                total=len(val_xs),
-                postfix=self.__cvt_metrics_results_to_string(metrics_results)
-            ).display()
+        tqdm(
+            [],
+            desc='Validate',
+            initial=len(val_xs),
+            total=len(val_xs),
+            postfix=self.__cvt_metrics_results_to_string(metrics_results)
+        ).display()
 
     def __calculate_metrics(self, predictions, target):
         samples_val_loss = [self.loss.call(pred_y, target_y) for pred_y, target_y in zip(predictions, target)]
