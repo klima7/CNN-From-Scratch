@@ -76,14 +76,22 @@ class Sequential(BaseEstimator, ClassifierMixin):
 
     def __learn_epoch(self, xs, ys, epoch_no):
         xs, ys = self.__shuffle(xs, ys)
+        losses_sum = 0
 
-        for x, y in tqdm(zip(xs, ys), total=len(xs), desc=f'Epoch {epoch_no}'):
-            self.__learn_single(x, y)
+        iterator = enumerate(zip(xs, ys))
+        tqdm_iterator = tqdm(iterator, total=len(xs), desc=f'Epoch {epoch_no}')
+        for i, (x, y) in tqdm_iterator:
+            loss = self.__learn_single(x, y)
+            losses_sum += loss
+            avg_loss = losses_sum / (i+1)
+            tqdm_iterator.set_postfix_str(f'loss={avg_loss:.2f}')
 
     def __learn_single(self, x, y):
         prediction = self.__propagate(x)
-        delta = self.loss(prediction, y)
+        loss = self.loss.call(prediction, y)
+        delta = self.loss.deriv(prediction, y)
         self.__backpropagate(delta)
+        return loss
 
     def __propagate(self, x):
         for layer_no, layer in enumerate(self.layers):
