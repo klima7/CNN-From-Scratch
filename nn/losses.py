@@ -33,19 +33,25 @@ class CrossEntropyLoss(Loss):
     def __init__(self, softmax=False):
         self.softmax = softmax
 
-    def call(self, prediciton, target):
-        ...
+    def call(self, prediction, target):
+        self.__ensure_is_onehot(target)
+
+        if self.softmax:
+            prediction = self.__softmax(prediction)
+
+        logs = np.log(prediction)
+        return - logs @ target
 
     def deriv(self, prediction, target):
         self.__ensure_is_onehot(target)
 
         if self.softmax:
-            return self.__call_with_softmax(prediction, target)
+            return self.__deriv_with_softmax(prediction, target)
         else:
-            return self.__call_without_softmax(prediction, target)
+            return self.__deriv_without_softmax(prediction, target)
 
     @staticmethod
-    def __call_with_softmax(prediction, target):
+    def __deriv_with_softmax(prediction, target):
         prediction = CrossEntropyLoss.__softmax(prediction)
         one_pos = CrossEntropyLoss.__get_one_position(target)
         delta = -prediction
@@ -53,9 +59,8 @@ class CrossEntropyLoss(Loss):
         return delta
 
     @staticmethod
-    def __call_without_softmax(prediction, target):
-        logs = np.log(prediction)
-        return - logs @ target
+    def __deriv_without_softmax(prediction, target):
+        return target / prediction
 
     @staticmethod
     def __softmax(x):
