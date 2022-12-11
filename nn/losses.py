@@ -28,7 +28,7 @@ class MseLoss(Loss):
         return target - prediction
 
 
-class CrossEntropyLoss(Loss):
+class CategoricalCrossEntropyLoss(Loss):
 
     def __init__(self, softmax=False):
         self.softmax = softmax
@@ -52,8 +52,8 @@ class CrossEntropyLoss(Loss):
 
     @staticmethod
     def __deriv_with_softmax(prediction, target):
-        prediction = CrossEntropyLoss.__softmax(prediction)
-        one_pos = CrossEntropyLoss.__get_one_position(target)
+        prediction = CategoricalCrossEntropyLoss.__softmax(prediction)
+        one_pos = CategoricalCrossEntropyLoss.__get_one_position(target)
         delta = -prediction
         delta[one_pos] = 1 - prediction[one_pos]
         return delta
@@ -92,7 +92,7 @@ def get_loss(loss):
 def get_loss_from_name(name):
     losses = {
         'mse': MseLoss,
-        'cce': CrossEntropyLoss,
+        'cce': CategoricalCrossEntropyLoss,
     }
 
     if name not in losses.keys():
