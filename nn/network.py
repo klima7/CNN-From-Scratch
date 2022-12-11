@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin
 from tqdm import tqdm
@@ -16,6 +18,7 @@ class Sequential(BaseEstimator, ClassifierMixin):
         self.training = False
         self.total_params_count = 0
         self.is_build = False
+        self.__history = defaultdict(list)
 
     @property
     def input_layer(self):
@@ -25,6 +28,10 @@ class Sequential(BaseEstimator, ClassifierMixin):
     def output_layer(self):
         return self.layers[-1]
 
+    @property
+    def history(self):
+        return dict(self.__history)
+
     def add(self, layer):
         self.layers.append(layer)
         self.is_build = False
@@ -33,21 +40,28 @@ class Sequential(BaseEstimator, ClassifierMixin):
         self.loss = get_loss(loss)
         self.__connect_layers()
         self.total_params_count = sum([layer.params_count for layer in self.layers])
+        self.__history.clear()
         self.is_build = True
 
-    def fit(self, xs, ys, epochs=1, learning_rate=0.001):
+    def fit(self, xs, ys, epochs=1, learning_rate=0.001, validation_data=None, verbose=True):
         self.__assert_build()
         self.epochs = epochs
         self.learning_rate = learning_rate
 
         self.training = True
         for epoch_no in range(self.epochs):
-            self.__learn_epoch(xs, ys, epoch_no + 1)
+            self.__learn_epoch(xs, ys, epoch_no + 1, verbose=verbose)
+            self.__perform_validation(validation_data, verbose=verbose)
         self.training = False
 
-    def predict(self, xs):
+        return self.__history
+
+    def predict(self, xs, verbose=True):
         self.__assert_build()
-        predictions = [self.__propagate(x) for x in xs]
+        iterator = iter(xs)
+        if verbose:
+            iterator = tqdm(xs, desc='Predict', total=len(xs))
+        predictions = [self.__propagate(x) for x in iterator]
         return np.array(predictions)
 
     def summary(self):
@@ -74,17 +88,24 @@ class Sequential(BaseEstimator, ClassifierMixin):
         except Exception as e:
             raise e from LayerConnectingException(index, layer)
 
-    def __learn_epoch(self, xs, ys, epoch_no):
+    def __learn_epoch(self, xs, ys, epoch_no, verbose=True):
         xs, ys = self.__shuffle(xs, ys)
         losses_sum = 0
+        avg_loss = 0
 
         iterator = enumerate(zip(xs, ys))
-        tqdm_iterator = tqdm(iterator, total=len(xs), desc=f'Epoch {epoch_no}')
-        for i, (x, y) in tqdm_iterator:
+        if verbose:
+            iterator = tqdm(iterator, total=len(xs), desc=f'Epoch {epoch_no:<2}')
+
+        for i, (x, y) in iterator:
             loss = self.__learn_single(x, y)
             losses_sum += loss
             avg_loss = losses_sum / (i+1)
-            tqdm_iterator.set_postfix_str(f'loss={avg_loss:.2f}')
+
+            if verbose:
+                iterator.set_postfix_str(f'loss={avg_loss:.3f}')
+
+        self.__history['loss'].append(avg_loss)
 
     def __learn_single(self, x, y):
         prediction = self.__propagate(x)
@@ -107,6 +128,43 @@ class Sequential(BaseEstimator, ClassifierMixin):
                 delta = layer.backpropagate_save(delta)
             except Exception as e:
                 raise e from BackpropagationException(layer_no, layer)
+
+    def __perform_validation(self, validation_data, verbose=True):
+        val_xs, val_ys = validation_data
+        iterator = iter(val_xs)
+        if verbose:
+            iterator = tqdm(val_xs, desc='Validate', leave=False)
+        predictions = np.array([self.__propagate(x) for x in iterator])
+
+        metrics_results = self.__calculate_metrics(predictions, val_ys)
+
+        for metric_name, metric_value in metrics_results.items():
+            self.__history[metric_name].append(metric_value)
+
+        if verbose:
+            tqdm(
+                [],
+                desc='Validate',
+                initial=len(val_xs),
+                total=len(val_xs),
+                postfix=self.__cvt_metrics_results_to_string(metrics_results)
+            ).display()
+
+    def __calculate_metrics(self, predictions, target):
+        samples_val_loss = [self.loss.call(pred_y, target_y) for pred_y, target_y in zip(predictions, target)]
+        val_loss = np.mean(samples_val_loss)
+
+        return {
+            'val_loss': val_loss
+        }
+
+    @staticmethod
+    def __cvt_metrics_results_to_string(metrics_results):
+        text = ''
+        for metric_name, metric_value in metrics_results.items():
+            part = f'{metric_name}={metric_value:.3f} '
+            text += part
+        return text[:-1]
 
     def __assert_build(self):
         if not self.is_build:
