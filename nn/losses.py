@@ -39,7 +39,7 @@ class CrossEntropyLoss(Loss):
         if self.softmax:
             prediction = self.__softmax(prediction)
 
-        logs = np.log(prediction)
+        logs = np.log(prediction, where=prediction > 0)
         return - logs @ target
 
     def deriv(self, prediction, target):
@@ -60,10 +60,11 @@ class CrossEntropyLoss(Loss):
 
     @staticmethod
     def __deriv_without_softmax(prediction, target):
-        return target / prediction
+        return np.divide(target, prediction, out=np.zeros_like(prediction), where=prediction != 0)
 
     @staticmethod
     def __softmax(x):
+        x = x - np.max(x)
         e = np.exp(x)
         s = np.sum(e)
         return e / s if s != 0 else np.zeros_like(e)

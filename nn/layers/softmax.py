@@ -18,6 +18,7 @@ class SoftmaxLayer(Layer):
             raise InvalidShapeException(f'{self.__class__.__name__} input must be 1D, but is {self.input_shape}')
 
     def propagate(self, x):
+        x = x - np.max(x)
         e = np.exp(x)
         s = np.sum(e)
         self.__y = e / s if s != 0 else np.zeros_like(e)
