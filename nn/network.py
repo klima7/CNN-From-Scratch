@@ -5,6 +5,7 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 from tqdm import tqdm
 
 from .losses import get_loss
+from .metrics import get_metric
 from .exceptions import LayerConnectingException, PropagationException, BackpropagationException, NetworkException
 
 
@@ -18,6 +19,7 @@ class Sequential(BaseEstimator, ClassifierMixin):
         self.training = False
         self.total_params_count = 0
         self.is_build = False
+        self.metrics = []
         self.__history = defaultdict(list)
 
     @property
@@ -36,8 +38,9 @@ class Sequential(BaseEstimator, ClassifierMixin):
         self.layers.append(layer)
         self.is_build = False
 
-    def build(self, loss='mse'):
+    def build(self, loss='mse', metrics=()):
         self.loss = get_loss(loss)
+        self.metrics = [get_metric(metric) for metric in metrics]
         self.__connect_layers()
         self.total_params_count = sum([layer.params_count for layer in self.layers])
         self.__history.clear()
@@ -144,17 +147,20 @@ class Sequential(BaseEstimator, ClassifierMixin):
         samples_val_loss = [self.loss.call(pred_y, target_y) for pred_y, target_y in zip(predictions, target)]
         val_loss = np.mean(samples_val_loss)
 
-        return {
-            'val_loss': val_loss
-        }
+        metrics_result = {'val_loss': val_loss}
+
+        for metric in self.metrics:
+            metrics_result[metric.NAME] = metric(predictions, target)
+
+        return metrics_result
 
     @staticmethod
     def __cvt_metrics_results_to_string(metrics_results):
         text = ''
         for metric_name, metric_value in metrics_results.items():
-            part = f'{metric_name}={metric_value:.3f} '
+            part = f'{metric_name}={metric_value:.3f}, '
             text += part
-        return text[:-1]
+        return text[:-2]
 
     def __assert_build(self):
         if not self.is_build:
