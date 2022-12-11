@@ -78,17 +78,6 @@ class SinActivation(Activation):
         return np.cos(x)
 
 
-class SoftmaxActivation(Activation):    # works together with cross entropy loss
-
-    def call(self, x):
-        e = np.exp(x)
-        s = np.sum(e)
-        return e / s if s != 0 else np.zeros_like(e)
-
-    def deriv(self, x):
-        return np.ones_like(x)
-
-
 def get_activation(activation):
     if isinstance(activation, str):
         return get_activation_from_name(activation)
@@ -106,7 +95,6 @@ def get_activation_from_name(name):
         'leaky_relu': LeakyReLuActivation,
         'tanh': TanhActivation,
         'sin': SinActivation,
-        'softmax': SoftmaxActivation,
     }
 
     if name not in activations.keys():
