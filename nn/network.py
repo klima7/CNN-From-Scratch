@@ -57,8 +57,6 @@ class Sequential(BaseEstimator, ClassifierMixin):
             self.__perform_validation(validation_data)
         self.training = False
 
-        return self.__history
-
     def predict(self, xs):
         self.__assert_build()
         iterator = tqdm(xs, desc='Predict', total=len(xs))
