@@ -54,7 +54,8 @@ class Sequential(BaseEstimator, ClassifierMixin):
         self.training = True
         for epoch_no in range(self.epochs):
             self.__learn_epoch(xs, ys, epoch_no + 1)
-            self.__perform_validation(validation_data)
+            if validation_data is not None:
+                self.__perform_validation(validation_data)
         self.training = False
 
     def predict(self, xs):
