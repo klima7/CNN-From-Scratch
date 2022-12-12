@@ -2,6 +2,7 @@ from .base import Layer
 from ..exceptions import InvalidParameterException, InvalidShapeException
 
 import numpy as np
+from numba import njit
 
 
 class Pool2DLayer(Layer):
@@ -44,14 +45,19 @@ class Pool2DLayer(Layer):
         return pooled
 
     def backpropagate(self, delta):
-        new_delta = np.zeros(self.input_shape, dtype=delta.dtype)
+        return self.__backpropagate(delta, tuple(self.input_shape), tuple(self.output_shape), tuple(self.pool_size), self.__indexes)
 
-        for i in range(self.output_shape[0]):
-            for j in range(self.output_shape[1]):
-                for k in range(self.slices_count):
-                    index = self.__indexes[i, j, k]
-                    unpooled_i = index // self.pool_size[1]
-                    unpooled_j = index % self.pool_size[1]
+    @staticmethod
+    @njit
+    def __backpropagate(delta, input_shape, output_shape, pool_size, indexes):
+        new_delta = np.zeros(input_shape, dtype=delta.dtype)
+
+        for i in range(output_shape[0]):
+            for j in range(output_shape[1]):
+                for k in range(output_shape[2]):
+                    index = indexes[i, j, k]
+                    unpooled_i = index // pool_size[1]
+                    unpooled_j = index % pool_size[1]
                     new_delta[unpooled_i, unpooled_j, k] = delta[i, j, k]
 
         return new_delta
