@@ -77,6 +77,8 @@ def get_dilated_kernel_size(kernel_size, dilation):
 
 @njit
 def dilate(array, dilation):
+    if dilation[0] == 1 and dilation[1] == 1:
+        return array
     array_size = np.array(array.shape[:2])
     array_depth = array.shape[2]
     dilated_size = get_dilated_kernel_size(array_size, dilation)
