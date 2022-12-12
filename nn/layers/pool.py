@@ -44,7 +44,17 @@ class Pool2DLayer(Layer):
         return pooled
 
     def backpropagate(self, delta):
-        return np.repeat(np.repeat(delta, self.pool_size[0], axis=0), self.pool_size[1], axis=1)
+        new_delta = np.zeros(self.input_shape, dtype=delta.dtype)
+
+        for i in range(self.output_shape[0]):
+            for j in range(self.output_shape[1]):
+                for k in range(self.slices_count):
+                    index = self.__indexes[i, j, k]
+                    unpooled_i = index // self.pool_size[1]
+                    unpooled_j = index % self.pool_size[1]
+                    new_delta[unpooled_i, unpooled_j, k] = delta[i, j, k]
+
+        return new_delta
 
     def __get_slices(self, data):
         cols_count = np.prod(self.pool_size)
