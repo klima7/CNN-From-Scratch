@@ -4,6 +4,7 @@ import numpy as np
 from numba import njit
 
 
+@njit
 def convolve(data, kernels, stride, dilation, full_conv=False):
     kernel_size = np.array(kernels.shape[1:-1])
     output_slice_size = get_convolution_output_size(data.shape[:-1], kernel_size, stride, dilation, full_conv)
