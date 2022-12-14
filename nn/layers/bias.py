@@ -4,7 +4,7 @@ from .base import Layer
 
 class BiasLayer(Layer):
 
-    def __init__(self, initializer='uniform'):
+    def __init__(self, initializer='constant'):
         super().__init__()
         self.initializer = get_initializer(initializer)
         self.bias = None

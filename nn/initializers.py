@@ -17,7 +17,7 @@ class Initializer(ABC):
 
 class ConstantInitializer(Initializer):
 
-    def __init__(self, value=1):
+    def __init__(self, value=0):
         self.value = value
 
     def __call__(self, shape, **kwargs):
