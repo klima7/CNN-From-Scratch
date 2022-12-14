@@ -114,4 +114,4 @@ class Conv2DLayer(Layer):
             )
             updates[slice_no, ...] = update
 
-        self.kernels += self.nn.learning_rate * updates
+        self.kernels -= self.nn.learning_rate * updates

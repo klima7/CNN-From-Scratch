@@ -39,7 +39,7 @@ class DenseLayer(Layer):
 
     def __adjust_weights(self, delta):
         weights_delta = self.nn.learning_rate * delta.reshape(-1, 1) @ self.__x.reshape(1, -1)
-        self.weights += weights_delta
+        self.weights -= weights_delta
 
     def __get_next_delta(self, delta):
         next_delta = delta @ self.weights
