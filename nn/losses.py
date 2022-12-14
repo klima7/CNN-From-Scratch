@@ -25,7 +25,7 @@ class MseLoss(Loss):
         return np.mean(np.power(target - prediction, 2))
 
     def deriv(self, prediction, target):
-        return target - prediction
+        return 2 * (prediction - target) / prediction.size
 
 
 class CceLoss(Loss):
@@ -34,8 +34,8 @@ class CceLoss(Loss):
         logs = np.log(prediction, where=prediction > 0)
         return - logs @ target
 
-    def deriv(self, prediction, target):
-        return np.divide(target, prediction, out=np.zeros_like(prediction), where=prediction != 0)
+    def deriv(self, input, target):
+        return sum(target) / sum(input) - target / input
 
 
 class SoftmaxCceLoss(Loss):
@@ -48,8 +48,8 @@ class SoftmaxCceLoss(Loss):
     def deriv(self, prediction, target):
         prediction = self.__softmax(prediction)
         one_pos = self.__get_one_position(target)
-        delta = -prediction
-        delta[one_pos] = 1 - prediction[one_pos]
+        delta = prediction
+        delta[one_pos] = prediction[one_pos] - 1
         return delta
 
     @staticmethod
