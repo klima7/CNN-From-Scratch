@@ -87,7 +87,8 @@ class Conv2DLayer(Layer):
         return new_delta
 
     def __get_new_delta(self, delta):
-        kernels = np.transpose(self.kernels, (3, 1, 2, 0))
+        kernels = np.flip(self.kernels, axis=(1, 2))
+        kernels = np.transpose(kernels, (3, 1, 2, 0))
         delta = dilate(delta, self.stride)
         new_delta = convolve(
             data=delta,
