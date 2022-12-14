@@ -21,7 +21,7 @@ class ConstantInitializer(Initializer):
         self.value = value
 
     def __call__(self, shape, **kwargs):
-        np.ones(shape) * self.value
+        return np.ones(shape) * self.value
 
 
 class RandomNormalInitializer(Initializer):
