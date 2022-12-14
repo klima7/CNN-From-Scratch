@@ -22,7 +22,7 @@ class Loss(ABC):
 class MseLoss(Loss):
 
     def call(self, prediction, target):
-        return np.sum(np.power(target - prediction, 2))
+        return np.mean(np.power(target - prediction, 2))
 
     def deriv(self, prediction, target):
         return target - prediction
