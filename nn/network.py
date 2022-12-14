@@ -99,7 +99,7 @@ class Sequential(BaseEstimator, ClassifierMixin):
             loss = self.__learn_single(x, y)
             losses_sum += loss
             avg_loss = losses_sum / (i+1)
-            iterator.set_postfix_str(f'loss={avg_loss:.3f}')
+            iterator.set_postfix_str(f'loss={avg_loss:.4f}')
 
         self.__history['loss'].append(avg_loss)
 
