@@ -8,7 +8,8 @@ from ..initializers import get_initializer
 
 class Conv2DLayer(Layer):
 
-    def __init__(self, filters_count, kernel_size, stride=(1, 1), initializer='glorot'):
+    def __init__(self, filters_count, kernel_size, stride=(1, 1), use_bias=True,
+                 kernel_initializer='glorot', bias_initializer='constant'):
         super().__init__()
 
         kernel_size = np.broadcast_to(kernel_size, (2,))
@@ -21,8 +22,11 @@ class Conv2DLayer(Layer):
         self.filters_count = filters_count
         self.kernel_size = np.array(kernel_size)
         self.stride = np.array(stride)
-        self.initializer = get_initializer(initializer)
+        self.use_bias = use_bias
+        self.kernel_initializer = get_initializer(kernel_initializer)
+        self.bias_initializer = get_initializer(bias_initializer)
         self.kernels = None
+        self.biases = None
         self.__x = None
 
     @property
@@ -51,9 +55,15 @@ class Conv2DLayer(Layer):
             'fan_in': np.prod(self.kernel_size) * self.input_slices_count,
             'fan_out': np.prod(self.kernel_size) * self.filters_count
         }
+
         kernels_shape = (self.filters_count, *self.kernel_size, self.input_slices_count)
-        self.kernels = self.initializer(kernels_shape, **initializer_kwargs)
+        self.kernels = self.kernel_initializer(kernels_shape, **initializer_kwargs)
         self.params_count = self.kernels.size
+
+        if self.use_bias:
+            biases_shape = (self.filters_count,)
+            self.biases = self.bias_initializer(biases_shape, **initializer_kwargs)
+            self.params_count += self.biases.size
 
     def validate_input_shape(self):
         if len(self.input_shape) != 3:
@@ -73,13 +83,18 @@ class Conv2DLayer(Layer):
 
     def propagate(self, x):
         self.__x = x
-        return convolve(
+        output = convolve(
             data=x,
             kernels=self.kernels,
             stride=self.stride,
             dilation=np.array([1, 1]),
             full_conv=False
         )
+
+        if self.use_bias:
+            output += self.biases
+
+        return output
 
     def backpropagate(self, delta):
         new_delta = self.__get_new_delta(delta)
