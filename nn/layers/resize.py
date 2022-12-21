@@ -1,15 +1,17 @@
+from abc import ABC, abstractmethod
+
 import numpy as np
 
 from .base import Layer
 from ..exceptions import InvalidParameterException, InvalidShapeException
 
 
-class Padding2DLayer(Layer):
+class ResizeLayer(Layer, ABC):
 
-    def __init__(self, padding_size, mode='zeros'):
+    def __init__(self, size, mode):
         super().__init__()
+        self.size = self._get_unified_size(size)
         self.mode = mode
-        self.padding_size = Padding2DLayer.__get_unified_padding_size(padding_size)
 
     @property
     def slices_count(self):
@@ -20,11 +22,9 @@ class Padding2DLayer(Layer):
         return self.input_shape[:-1]
 
     @property
+    @abstractmethod
     def output_slice_size(self):
-        if self.mode == 'valid':
-            return self.input_slice_size
-        paddings_sum = np.array([sum(self.padding_size[0]), sum(self.padding_size[1])])
-        return self.input_slice_size + paddings_sum
+        pass
 
     def validate_input_shape(self):
         if len(self.input_shape) != 3:
@@ -33,16 +33,8 @@ class Padding2DLayer(Layer):
     def get_output_shape(self):
         return tuple((*self.output_slice_size, self.slices_count))
 
-    def propagate(self, x):
-        padding_size = [*self.padding_size, (0, 0)]
-        return Padding2DLayer.__add_padding(x, padding_size, self.mode)
-
-    def backpropagate(self, delta):
-        padding_size = [*self.padding_size, (0, 0)]
-        return Padding2DLayer.__remove_padding(delta, padding_size)
-
     @staticmethod
-    def __get_unified_padding_size(size):
+    def _get_unified_size(size):
         if isinstance(size, int):
             return (size, size), (size, size)
         elif isinstance(size, tuple):
@@ -52,7 +44,7 @@ class Padding2DLayer(Layer):
                 return size
 
     @staticmethod
-    def __add_padding(array, padding_sizes, mode):
+    def _add_padding(array, padding_sizes, mode):
         if mode == 'valid':
             return np.array(array)
         elif mode == 'same':
@@ -63,9 +55,49 @@ class Padding2DLayer(Layer):
             raise InvalidParameterException(f'Invalid padding mode: {mode}')
 
     @staticmethod
-    def __remove_padding(array, paddings_size):
+    def _remove_padding(array, paddings_size):
         slices = []
         for padding_size, dim in zip(paddings_size, array.shape):
             s = slice(padding_size[0], dim - padding_size[1])
             slices.append(s)
         return array[tuple(slices)]
+
+
+class Padding2DLayer(ResizeLayer):
+
+    def __init__(self, size, mode='same'):
+        super().__init__(size, mode)
+
+    @property
+    def output_slice_size(self):
+        if self.mode == 'valid':
+            return self.input_slice_size
+        paddings_sum = np.array([sum(self.size[0]), sum(self.size[1])])
+        return self.input_slice_size + paddings_sum
+
+    def propagate(self, x):
+        size = [*self.size, (0, 0)]
+        return self._add_padding(x, size, self.mode)
+
+    def backpropagate(self, delta):
+        size = [*self.size, (0, 0)]
+        return self._remove_padding(delta, size)
+
+
+class Crop2DLayer(ResizeLayer):
+
+    def __init__(self, size, mode='same'):
+        super().__init__(size, mode)
+
+    @property
+    def output_slice_size(self):
+        crop_sum = np.array([sum(self.size[0]), sum(self.size[1])])
+        return self.input_slice_size - crop_sum
+
+    def propagate(self, x):
+        size = [*self.size, (0, 0)]
+        return self._remove_padding(x, size)
+
+    def backpropagate(self, delta):
+        size = [*self.size, (0, 0)]
+        return self._add_padding(delta, size, self.mode)
