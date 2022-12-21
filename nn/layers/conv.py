@@ -101,18 +101,18 @@ class Conv2DLayer(Layer):
 
     def __update_weights(self, delta):
         updates = np.zeros_like(self.kernels)
-        for slice_no in range(self.filters_count):
-            kernel = delta[..., slice_no, np.newaxis]
-            kernel = dilate(kernel, self.stride)
-            kernels = np.repeat(kernel[np.newaxis, ...], self.input_slices_count, axis=0)
-            kernels = np.transpose(kernels, (3, 1, 2, 0))
-            update = convolve(
-                data=self.__x,
-                kernels=kernels,
-                stride=np.array([1, 1]),
-                dilation=np.array([1, 1]),
-                full_conv=False
-            )
-            updates[slice_no, ...] = update
+        for delta_no in range(self.filters_count):
+            delta_slice = delta[..., delta_no, np.newaxis]
+            delta_slice = dilate(delta_slice, self.stride)
+            for input_no in range(self.input_slices_count):
+                input_slice = self.__x[..., input_no, np.newaxis]
+                convoluted = convolve(
+                    data=input_slice,
+                    kernels=delta_slice[np.newaxis, ...],
+                    stride=np.array([1, 1]),
+                    dilation=np.array([1, 1]),
+                    full_conv=False
+                )
+                updates[delta_no, :, :, input_no] = convoluted[..., 0]
 
         self.kernels -= self.nn.learning_rate * updates
