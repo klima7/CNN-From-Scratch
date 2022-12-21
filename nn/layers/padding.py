@@ -55,9 +55,9 @@ class Padding2DLayer(Layer):
     def __add_padding(array, padding_sizes, mode):
         if mode == 'valid':
             return np.array(array)
-        elif mode == 'zeros':
+        elif mode == 'same':
             return np.pad(array, padding_sizes, mode='constant', constant_values=0)
-        elif mode == 'edge':
+        elif mode == 'duplicate':
             return np.pad(array, padding_sizes, mode='edge')
         else:
             raise InvalidParameterException(f'Invalid padding mode: {mode}')
