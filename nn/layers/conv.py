@@ -115,6 +115,11 @@ class Conv2DLayer(Layer):
         return new_delta
 
     def __update_weights(self, delta):
+        self.__update_kernels(delta)
+        if self.use_bias:
+            self.__update_biases(delta)
+
+    def __update_kernels(self, delta):
         updates = np.zeros_like(self.kernels)
         kernels = dilate(delta, self.stride)
         kernels = np.transpose(kernels, (2, 0, 1))[..., np.newaxis]
@@ -130,3 +135,8 @@ class Conv2DLayer(Layer):
             updates[:, :, :, input_no] = np.transpose(convoluted, (2, 0, 1))
 
         self.kernels -= self.nn.learning_rate * updates
+
+    def __update_biases(self, delta):
+        for delta_no in range(self.filters_count):
+            delta_slice_sum = delta[..., delta_no].sum()
+            self.biases[delta_no] -= self.nn.learning_rate * delta_slice_sum
