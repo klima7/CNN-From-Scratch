@@ -157,7 +157,7 @@ class Sequential(BaseEstimator, ClassifierMixin):
     def __cvt_metrics_results_to_string(metrics_results):
         text = ''
         for metric_name, metric_value in metrics_results.items():
-            part = f'{metric_name}={metric_value:.3f}, '
+            part = f'{metric_name}={metric_value:.4f}, '
             text += part
         return text[:-2]
 
