@@ -56,8 +56,8 @@ class Pool2DLayer(Layer):
             for j in range(output_shape[1]):
                 for k in range(output_shape[2]):
                     index = indexes[i, j, k]
-                    unpooled_i = index // pool_size[1]
-                    unpooled_j = index % pool_size[1]
+                    unpooled_i = i * pool_size[0] + index // pool_size[1]
+                    unpooled_j = j * pool_size[1] + index % pool_size[1]
                     new_delta[unpooled_i, unpooled_j, k] = delta[i, j, k]
 
         return new_delta
