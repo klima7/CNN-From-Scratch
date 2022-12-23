@@ -1,8 +1,8 @@
-from . import activations
-from . import losses
-from . import initializers
-from . import metrics
-from .exceptions import InvalidParameterException
+from .. import activations
+from .. import losses
+from .. import initializers
+from .. import metrics
+from ..exceptions import InvalidParameterException
 
 
 def get_activation(activation):

@@ -1,9 +1,9 @@
 import numpy as np
 
 from .base import Layer
-from ..convolution import convolve, get_convolution_output_size, get_dilated_kernel_size, dilate
+from ..utils.convolution import convolve, get_convolution_output_size, get_dilated_kernel_size, dilate
 from ..exceptions import InvalidParameterException, InvalidShapeException
-from ..shortcuts import get_initializer
+from ..utils.shortcuts import get_initializer
 
 
 class Conv2DLayer(Layer):

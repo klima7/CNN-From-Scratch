@@ -1,4 +1,4 @@
-from ..shortcuts import get_initializer
+from ..utils.shortcuts import get_initializer
 from ..exceptions import InvalidShapeException
 from .base import Layer
 
