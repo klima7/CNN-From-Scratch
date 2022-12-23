@@ -6,7 +6,7 @@ from .base import Layer
 from ..exceptions import InvalidParameterException, InvalidShapeException
 
 
-class ResizeLayer(Layer, ABC):
+class Resize2DLayer(Layer, ABC):
 
     def __init__(self, size, mode):
         super().__init__()
@@ -63,7 +63,7 @@ class ResizeLayer(Layer, ABC):
         return array[tuple(slices)]
 
 
-class Padding2DLayer(ResizeLayer):
+class Padding2DLayer(Resize2DLayer):
 
     def __init__(self, size, mode='same'):
         super().__init__(size, mode)
@@ -84,7 +84,7 @@ class Padding2DLayer(ResizeLayer):
         return self._remove_padding(delta, size)
 
 
-class Crop2DLayer(ResizeLayer):
+class Crop2DLayer(Resize2DLayer):
 
     def __init__(self, size, mode='same'):
         super().__init__(size, mode)
