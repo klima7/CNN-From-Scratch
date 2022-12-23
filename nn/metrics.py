@@ -31,7 +31,7 @@ def get_metric(metric):
     elif isinstance(metric, Metric):
         return metric
     else:
-        raise InvalidParameterException(f'Invalid loss: {loss}')
+        raise InvalidParameterException(f'Invalid loss: {metric}')
 
 
 def get_metric_from_name(name):

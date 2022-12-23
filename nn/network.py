@@ -51,12 +51,10 @@ class Sequential(BaseEstimator, ClassifierMixin):
         self.epochs = epochs
         self.learning_rate = learning_rate
 
-        self.training = True
         for epoch_no in range(self.epochs):
             self.__learn_epoch(xs, ys, epoch_no + 1)
             if validation_data is not None:
                 self.__perform_validation(validation_data)
-        self.training = False
 
     def predict(self, xs):
         self.__assert_build()
@@ -93,13 +91,16 @@ class Sequential(BaseEstimator, ClassifierMixin):
         losses_sum = 0
         avg_loss = 0
 
-        iterator = tqdm(enumerate(zip(xs, ys)), total=len(xs), desc=f'Epoch {epoch_no:<2}')
+        self.training = True
 
+        iterator = tqdm(enumerate(zip(xs, ys)), total=len(xs), desc=f'Epoch {epoch_no:<2}')
         for i, (x, y) in iterator:
             loss = self.__learn_single(x, y)
             losses_sum += loss
             avg_loss = losses_sum / (i+1)
             iterator.set_postfix_str(f'loss={avg_loss:.4f}')
+
+        self.training = False
 
         self.__history['loss'].append(avg_loss)
 
