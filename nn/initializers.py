@@ -2,8 +2,6 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
-from .exceptions import InvalidParameterException
-
 
 class Initializer(ABC):
 
@@ -50,26 +48,3 @@ class GlorotUniformInitialization(Initializer):
         fan_in, fan_out = kwargs['fan_in'], kwargs['fan_out']
         x = np.sqrt(6 / (fan_in + fan_out))
         return np.random.uniform(-x, x, shape)
-
-
-def get_initializer(initializer):
-    if isinstance(initializer, str):
-        return get_initializer_from_name(initializer)
-    elif isinstance(initializer, Initializer):
-        return initializer
-    else:
-        raise InvalidParameterException(f'Invalid initializer: {initializer}')
-
-
-def get_initializer_from_name(name):
-    initializers = {
-        'constant': ConstantInitializer,
-        'normal': RandomNormalInitializer,
-        'uniform': RandomUniformInitializer,
-        'glorot': GlorotUniformInitialization,
-    }
-
-    if name not in initializers.keys():
-        raise InvalidParameterException(f'Unknown initializer name: {name}')
-
-    return initializers[name]()

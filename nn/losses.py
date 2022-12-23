@@ -2,8 +2,6 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
-from .exceptions import InvalidParameterException
-
 
 class Loss(ABC):
 
@@ -62,25 +60,3 @@ class SoftmaxCceLoss(Loss):
     @staticmethod
     def __get_one_position(target):
         return np.where(target == 1)[0][0]
-
-
-def get_loss(loss):
-    if isinstance(loss, str):
-        return get_loss_from_name(loss)
-    elif isinstance(loss, Loss):
-        return loss
-    else:
-        raise InvalidParameterException(f'Invalid loss: {loss}')
-
-
-def get_loss_from_name(name):
-    losses = {
-        'mse': MseLoss,
-        'cce': CceLoss,
-        'softmax_cce': SoftmaxCceLoss,
-    }
-
-    if name not in losses.keys():
-        raise InvalidParameterException(f'Unknown loss name: {name}')
-
-    return losses[name]()

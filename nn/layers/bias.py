@@ -1,4 +1,4 @@
-from ..initializers import get_initializer
+from ..shortcuts import get_initializer
 from .base import Layer
 
 

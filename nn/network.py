@@ -4,8 +4,7 @@ import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin
 from tqdm import tqdm
 
-from .losses import get_loss
-from .metrics import get_metric
+from .shortcuts import get_loss, get_metric
 from .exceptions import LayerConnectingException, PropagationException, BackpropagationException, NetworkException
 
 

@@ -3,8 +3,6 @@ from abc import ABC, abstractmethod
 import numpy as np
 from scipy.special import expit
 
-from .exceptions import InvalidParameterException
-
 
 class Activation(ABC):
 
@@ -76,28 +74,3 @@ class SinActivation(Activation):
 
     def deriv(self, x):
         return np.cos(x)
-
-
-def get_activation(activation):
-    if isinstance(activation, str):
-        return get_activation_from_name(activation)
-    elif isinstance(activation, Activation):
-        return activation
-    else:
-        raise InvalidParameterException(f'Invalid activation: {activation}')
-
-
-def get_activation_from_name(name):
-    activations = {
-        'no': NoActivation,
-        'logistic': LogisticActivation,
-        'relu': ReLuActivation,
-        'leaky_relu': LeakyReLuActivation,
-        'tanh': TanhActivation,
-        'sin': SinActivation,
-    }
-
-    if name not in activations.keys():
-        raise InvalidParameterException(f'Unknown activation name: {name}')
-
-    return activations[name]()

@@ -2,8 +2,6 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
-from .exceptions import InvalidParameterException
-
 
 class Metric(ABC):
 
@@ -23,22 +21,3 @@ class CategoricalAccuracy(Metric):
         target_classes = np.argmax(target, axis=1)
         correct = predicted_classes == target_classes
         return np.sum(correct) / correct.size
-
-
-def get_metric(metric):
-    if isinstance(metric, str):
-        return get_metric_from_name(metric)
-    elif isinstance(metric, Metric):
-        return metric
-    else:
-        raise InvalidParameterException(f'Invalid loss: {metric}')
-
-
-def get_metric_from_name(name):
-    metrics = [CategoricalAccuracy]
-
-    for metric in metrics:
-        if metric.NAME == name:
-            return metric()
-
-    raise InvalidParameterException(f'Unknown metric name: {name}')
