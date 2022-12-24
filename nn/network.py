@@ -5,6 +5,7 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 from tqdm import tqdm
 
 from .utils.shortcuts import get_loss, get_metric
+from .utils.statistics import RollingAverage
 from .exceptions import LayerConnectingException, PropagationException, BackpropagationException, NetworkException
 
 
@@ -51,7 +52,9 @@ class Sequential(BaseEstimator, ClassifierMixin):
         self.learning_rate = learning_rate
 
         for epoch_no in range(self.epochs):
-            self.__learn_epoch(xs, ys, epoch_no + 1)
+            loss = self.__learn_epoch(xs, ys, epoch_no + 1)
+            self.__history['loss'].append(loss)
+
             if validation_data is not None:
                 self.__perform_validation(validation_data)
 
@@ -87,21 +90,17 @@ class Sequential(BaseEstimator, ClassifierMixin):
 
     def __learn_epoch(self, xs, ys, epoch_no):
         xs, ys = self.__shuffle(xs, ys)
-        losses_sum = 0
-        avg_loss = 0
+        loss_rolling_avg = RollingAverage()
 
         self.training = True
-
         iterator = tqdm(enumerate(zip(xs, ys)), total=len(xs), desc=f'Epoch {epoch_no:<2}')
         for i, (x, y) in iterator:
             loss = self.__learn_single(x, y)
-            losses_sum += loss
-            avg_loss = losses_sum / (i+1)
-            iterator.set_postfix_str(f'loss={avg_loss:.4f}')
-
+            loss_rolling_avg.update(loss)
+            iterator.set_postfix_str(f'loss={loss_rolling_avg.value:.4f}')
         self.training = False
 
-        self.__history['loss'].append(avg_loss)
+        return loss_rolling_avg.value
 
     def __learn_single(self, x, y):
         prediction = self.__propagate(x)
