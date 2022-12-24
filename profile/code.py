@@ -35,7 +35,7 @@ def prepare(n_samples=5000):
     ]
 
     model = nn.network.Sequential(layers)
-    model.build('softmax_cce', metrics=['categorical_accuracy'])
+    model.compile('softmax_cce', metrics=['categorical_accuracy'])
 
 
 def start():

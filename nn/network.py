@@ -18,7 +18,7 @@ class Sequential(BaseEstimator, ClassifierMixin):
         self.learning_rate = None
         self.training = False
         self.total_params_count = 0
-        self.is_build = False
+        self.is_compiled = False
         self.loss_rolling_avg = RollingAverage()
         self.metrics = []
         self._history = defaultdict(list)
@@ -37,18 +37,18 @@ class Sequential(BaseEstimator, ClassifierMixin):
 
     def add(self, layer):
         self.layers.append(layer)
-        self.is_build = False
+        self.is_compiled = False
 
-    def build(self, loss='mse', metrics=()):
+    def compile(self, loss='mse', metrics=()):
         self.loss = get_loss(loss)
         self.metrics = [get_metric(metric) for metric in metrics]
         self.__connect_layers()
         self.total_params_count = sum([layer.params_count for layer in self.layers])
         self._history.clear()
-        self.is_build = True
+        self.is_compiled = True
 
     def fit(self, xs, ys, epochs=1, learning_rate=0.001, validation_data=None):
-        self.__assert_build()
+        self.__assert_compiled()
         self.epochs = epochs
         self.learning_rate = learning_rate
 
@@ -60,7 +60,7 @@ class Sequential(BaseEstimator, ClassifierMixin):
                 self.__validate(val_xs, val_ys)
 
     def predict(self, xs):
-        self.__assert_build()
+        self.__assert_compiled()
         iterator = tqdm(xs, desc='Predict', total=len(xs))
         predictions = [self.__propagate(x) for x in iterator]
         return np.array(predictions)
@@ -69,11 +69,11 @@ class Sequential(BaseEstimator, ClassifierMixin):
         print(f"{'NO':<4} | {'NAME':<20} | {'PARAMS':10} | {'INPUT':15} | {'OUTPUT':15}")
         for index, layer in enumerate(self.layers):
             name_text = str(layer)
-            params_text = str(layer.params_count) if self.is_build else '?'
-            input_text = f'{tuple(layer.input_shape)}' if self.is_build else '?'
-            output_text = f'{tuple(layer.output_shape)}' if self.is_build else '?'
+            params_text = str(layer.params_count) if self.is_compiled else '?'
+            input_text = f'{tuple(layer.input_shape)}' if self.is_compiled else '?'
+            output_text = f'{tuple(layer.output_shape)}' if self.is_compiled else '?'
             print(f'{index:<4} | {name_text:<20} | {params_text:<10} | {input_text:<15} | {output_text:<15}')
-        total_params_text = str(self.total_params_count) if self.is_build else '?'
+        total_params_text = str(self.total_params_count) if self.is_compiled else '?'
         print(f'\nTotal parameters count: {total_params_text}')
 
     def __connect_layers(self):
@@ -157,9 +157,9 @@ class Sequential(BaseEstimator, ClassifierMixin):
         for metric in self.metrics:
             self._history[f'{prefix}{metric.NAME}'].append(metric.value)
 
-    def __assert_build(self):
-        if not self.is_build:
-            raise NetworkException('Network must be build to perform requested operation')
+    def __assert_compiled(self):
+        if not self.is_compiled:
+            raise NetworkException('Network must be compiled to perform requested operation')
 
     @staticmethod
     def __shuffle(xs, ys):
