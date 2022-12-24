@@ -18,11 +18,11 @@ class Sequential(BaseEstimator, ClassifierMixin):
         self.epochs = None
         self.learning_rate = None
         self.training = False
-        self.total_params_count = 0
         self.is_compiled = False
-        self.loss_rolling_avg = RollingAverage()
         self.metrics = []
+        self.callbacks = []
         self._history = defaultdict(list)
+        self.loss_rolling_avg = RollingAverage()
 
     @property
     def input_layer(self):
@@ -46,23 +46,21 @@ class Sequential(BaseEstimator, ClassifierMixin):
         for layer, weights in zip(self.layers, all_weights):
             layer.weights = weights
 
-    def get_weights(self):
-        return [layer.weights for layer in self.layers]
-
-    def set_weights(self, all_weights):
-        assert len(all_weights) == len(self.layers)
-        for layer, weights in zip(self.layers, all_weights):
-            layer.weights = weights
+    @property
+    def total_params_count(self):
+        return sum([layer.params_count for layer in self.layers])
 
     def add(self, layer):
         self.layers.append(layer)
         self.is_compiled = False
 
-    def compile(self, loss='mse', metrics=()):
+    def compile(self, loss='mse', metrics=(), callbacks=()):
         self.loss = get_loss(loss)
         self.metrics = [get_metric(metric) for metric in metrics]
         self.__connect_layers()
-        self.total_params_count = sum([layer.params_count for layer in self.layers])
+        self.callbacks = callbacks
+        for callback in self.callbacks:
+            callback.set_model(self)
         self._history.clear()
         self.is_compiled = True
 
@@ -70,13 +68,18 @@ class Sequential(BaseEstimator, ClassifierMixin):
         self.__assert_compiled()
         self.epochs = epochs
         self.learning_rate = learning_rate
+        self.__call_callbacks('on_train_begin')
 
         for epoch_no in range(self.epochs):
+            self.__call_callbacks('on_epoch_begin')
             self.__learn_epoch(xs, ys, epoch_no + 1)
 
             if validation_data is not None:
                 val_xs, val_ys = validation_data
                 self.__validate(val_xs, val_ys)
+            self.__call_callbacks('on_epoch_end')
+
+        self.__call_callbacks('on_train_end')
 
     def predict(self, xs):
         self.__assert_compiled()
@@ -156,6 +159,7 @@ class Sequential(BaseEstimator, ClassifierMixin):
 
     def __validate(self, val_xs, val_ys):
         self.__reset_metrics()
+        self.__call_callbacks('on_validation_begin')
 
         iterator = tqdm(zip(val_xs, val_ys), desc='Validate', total=len(val_xs))
         for x, y in iterator:
@@ -164,6 +168,7 @@ class Sequential(BaseEstimator, ClassifierMixin):
             iterator.set_postfix_str(self.__get_metrics_string(prefix='val_'))
 
         self.__add_metrics_to_history(prefix='val_')
+        self.__call_callbacks('on_validation_end')
 
     def __reset_metrics(self):
         self.loss_rolling_avg.reset()
@@ -185,6 +190,11 @@ class Sequential(BaseEstimator, ClassifierMixin):
         self._history[f'{prefix}loss'].append(self.loss_rolling_avg.value)
         for metric in self.metrics:
             self._history[f'{prefix}{metric.NAME}'].append(metric.value)
+
+    def __call_callbacks(self, method_name):
+        for callback in self.callbacks:
+            method = getattr(callback, method_name)
+            method()
 
     def __assert_compiled(self):
         if not self.is_compiled:
