@@ -52,8 +52,7 @@ class Sequential(BaseEstimator, ClassifierMixin):
         self.learning_rate = learning_rate
 
         for epoch_no in range(self.epochs):
-            loss = self.__learn_epoch(xs, ys, epoch_no + 1)
-            self._history['loss'].append(loss)
+            self.__learn_epoch(xs, ys, epoch_no + 1)
 
             if validation_data is not None:
                 self.__perform_validation(validation_data)
@@ -91,6 +90,7 @@ class Sequential(BaseEstimator, ClassifierMixin):
     def __learn_epoch(self, xs, ys, epoch_no):
         xs, ys = self.__shuffle(xs, ys)
 
+        # reset metrics
         loss_rolling_avg = RollingAverage()
         for metric in self.metrics:
             metric.reset()
@@ -101,15 +101,20 @@ class Sequential(BaseEstimator, ClassifierMixin):
         for i, (x, y) in iterator:
             prediction, loss = self.__learn_single(x, y)
 
+            # update metrics
             loss_rolling_avg.update(loss)
             for metric in self.metrics:
                 metric.update(np.array([y]), np.array([prediction]))
 
+            # show metrics
             iterator.set_postfix_str(self.__get_metrics_string(loss=loss_rolling_avg.value))
 
         self.training = False
 
-        return loss_rolling_avg.value
+        # add metrics to history
+        self._history['loss'].append(loss_rolling_avg.value)
+        for metric in self.metrics:
+            self._history[metric.NAME].append(metric.value)
 
     def __learn_single(self, x, y):
         prediction = self.__propagate(x)
@@ -135,31 +140,24 @@ class Sequential(BaseEstimator, ClassifierMixin):
 
     def __perform_validation(self, validation_data):
         val_xs, val_ys = validation_data
-        iterator = tqdm(val_xs, desc='Validate', leave=False)
-        predictions = np.array([self.__propagate(x) for x in iterator])
 
-        metrics_results = self.__calculate_metrics(predictions, val_ys)
-        for metric_name, metric_value in metrics_results.items():
-            self._history[metric_name].append(metric_value)
-
-        tqdm(
-            [],
-            desc='Validate',
-            initial=len(val_xs),
-            total=len(val_xs),
-            postfix=self.__cvt_metrics_results_to_string(metrics_results)
-        ).display()
-
-    def __calculate_metrics(self, predictions, target):
-        samples_val_loss = [self.loss.call(pred_y, target_y) for pred_y, target_y in zip(predictions, target)]
-        val_loss = np.mean(samples_val_loss)
-
-        metrics_result = {'val_loss': val_loss}
-
+        loss_rolling_avg = RollingAverage()
         for metric in self.metrics:
-            metrics_result[metric.NAME] = metric(predictions, target)
+            metric.reset()
 
-        return metrics_result
+        iterator = tqdm(zip(val_xs, val_ys), desc='Validate', total=len(val_xs))
+        for x, y in iterator:
+            prediction = self.__propagate(x)
+            loss = self.loss.call(prediction, y)
+            loss_rolling_avg.update(loss)
+            for metric in self.metrics:
+                metric.update(np.array([prediction]), np.array([y]))
+
+            iterator.set_postfix_str(self.__get_metrics_string(loss_rolling_avg.value, prefix='val_'))
+
+        self._history['val_loss'].append(loss_rolling_avg.value)
+        for metric in self.metrics:
+            self._history[f'val_{metric.NAME}'].append(metric.value)
 
     def __get_metrics_string(self, loss, prefix=''):
         parts = [f'{prefix}{metric.NAME}={metric.value:.4f}' for metric in self.metrics]
