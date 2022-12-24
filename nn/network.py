@@ -1,3 +1,4 @@
+import pickle
 from collections import defaultdict
 
 import numpy as np
@@ -34,6 +35,24 @@ class Sequential(BaseEstimator, ClassifierMixin):
     @property
     def history(self):
         return dict(self._history)
+
+    @property
+    def weights(self):
+        return [layer.weights for layer in self.layers]
+
+    @weights.setter
+    def weights(self, all_weights):
+        assert len(all_weights) == len(self.layers)
+        for layer, weights in zip(self.layers, all_weights):
+            layer.weights = weights
+
+    def get_weights(self):
+        return [layer.weights for layer in self.layers]
+
+    def set_weights(self, all_weights):
+        assert len(all_weights) == len(self.layers)
+        for layer, weights in zip(self.layers, all_weights):
+            layer.weights = weights
 
     def add(self, layer):
         self.layers.append(layer)
@@ -75,6 +94,16 @@ class Sequential(BaseEstimator, ClassifierMixin):
             print(f'{index:<4} | {name_text:<20} | {params_text:<10} | {input_text:<15} | {output_text:<15}')
         total_params_text = str(self.total_params_count) if self.is_compiled else '?'
         print(f'\nTotal parameters count: {total_params_text}')
+
+    def save(self, path):
+        with open(path, 'wb') as file:
+            pickle.dump(self._history, file)
+            pickle.dump(self.weights, file)
+
+    def load(self, path):
+        with open(path, 'rb') as file:
+            self._history = pickle.load(file)
+            self.weights = pickle.load(file)
 
     def __connect_layers(self):
         for i in range(len(self.layers)):
