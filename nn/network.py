@@ -18,6 +18,7 @@ class Sequential(BaseEstimator, ClassifierMixin):
         self.epochs = None
         self.learning_rate = None
         self.training = False
+        self.stop_training = False
         self.is_compiled = False
         self.metrics = []
         self.callbacks = []
@@ -68,6 +69,7 @@ class Sequential(BaseEstimator, ClassifierMixin):
         self.__assert_compiled()
         self.epochs = epochs
         self.learning_rate = learning_rate
+        self.stop_training = False
         self.__call_callbacks('on_train_begin')
 
         for epoch_no in range(self.epochs):
@@ -78,6 +80,9 @@ class Sequential(BaseEstimator, ClassifierMixin):
                 val_xs, val_ys = validation_data
                 self.__validate(val_xs, val_ys)
             self.__call_callbacks('on_epoch_end')
+
+            if self.stop_training:
+                break
 
         self.__call_callbacks('on_train_end')
 
