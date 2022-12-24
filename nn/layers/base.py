@@ -12,7 +12,7 @@ class Layer(ABC):
         self.prev_layer = None
         self.next_layer = None
         self.output_shape = None
-        self.all_weights = []
+        self.weights = []
 
     def __repr__(self):
         return self.__class__.__name__
@@ -23,7 +23,7 @@ class Layer(ABC):
 
     @property
     def params_count(self):
-        return sum([weights.size for weights in self.all_weights if weights is not None])
+        return sum([weights.size for weights in self.weights if weights is not None])
 
     def connect(self, nn, prev_layer, next_layer):
         self.nn = nn

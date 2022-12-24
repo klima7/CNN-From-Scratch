@@ -7,15 +7,15 @@ class BiasLayer(Layer):
     def __init__(self, initializer='constant'):
         super().__init__()
         self.initializer = get_initializer(initializer)
-        self.all_weights = [None]
+        self.weights = [None]
 
     @property
     def bias(self):
-        return self.all_weights[0]
+        return self.weights[0]
 
     @bias.setter
     def bias(self, value):
-        self.all_weights[0] = value
+        self.weights[0] = value
 
     def get_output_shape(self):
         return self.input_shape

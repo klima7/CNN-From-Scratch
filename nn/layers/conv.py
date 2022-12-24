@@ -25,24 +25,24 @@ class Conv2DLayer(Layer):
         self.use_bias = use_bias
         self.kernel_initializer = get_initializer(kernel_initializer)
         self.bias_initializer = get_initializer(bias_initializer)
-        self.all_weights = [None, None]
+        self.weights = [None, None]
         self.__x = None
 
     @property
     def kernels(self):
-        return self.all_weights[0]
+        return self.weights[0]
 
     @kernels.setter
     def kernels(self, value):
-        self.all_weights[0] = value
+        self.weights[0] = value
 
     @property
     def biases(self):
-        return self.all_weights[1]
+        return self.weights[1]
 
     @biases.setter
     def biases(self, value):
-        self.all_weights[1] = value
+        self.weights[1] = value
 
     @property
     def input_slices_count(self):

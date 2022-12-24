@@ -9,16 +9,16 @@ class DenseLayer(Layer):
         super().__init__()
         self.neurons_count = neurons_count
         self.initializer = get_initializer(initializer)
-        self.all_weights = [None]
+        self.weights = [None]
         self.__x = None
 
     @property
-    def weights(self):
-        return self.all_weights[0]
+    def connections(self):
+        return self.weights[0]
 
-    @weights.setter
-    def weights(self, value):
-        self.all_weights[0] = value
+    @connections.setter
+    def connections(self, value):
+        self.weights[0] = value
 
     def validate_input_shape(self):
         if len(self.input_shape) != 1:
@@ -33,11 +33,11 @@ class DenseLayer(Layer):
             'fan_in': self.input_shape[0],
             'fan_out': self.output_shape[0]
         }
-        self.weights = self.initializer(shape, **initializer_kwargs)
+        self.connections = self.initializer(shape, **initializer_kwargs)
 
     def propagate(self, x):
         self.__x = x
-        return x @ self.weights.T
+        return x @ self.connections.T
 
     def backpropagate(self, delta):
         next_delta = self.__get_next_delta(delta)
@@ -46,8 +46,8 @@ class DenseLayer(Layer):
 
     def __adjust_weights(self, delta):
         weights_delta = self.nn.learning_rate * delta.reshape(-1, 1) @ self.__x.reshape(1, -1)
-        self.weights -= weights_delta
+        self.connections -= weights_delta
 
     def __get_next_delta(self, delta):
-        next_delta = delta @ self.weights
+        next_delta = delta @ self.connections
         return next_delta.flatten()
