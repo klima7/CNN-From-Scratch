@@ -4,6 +4,10 @@ class RollingAverage:
         self.total = 0
         self.count = 0
 
+    def reset(self):
+        self.total = 0
+        self.count = 0
+
     def update(self, value):
         self.total += value
         self.count += 1

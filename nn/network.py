@@ -19,6 +19,7 @@ class Sequential(BaseEstimator, ClassifierMixin):
         self.training = False
         self.total_params_count = 0
         self.is_build = False
+        self.loss_rolling_avg = RollingAverage()
         self.metrics = []
         self._history = defaultdict(list)
 
@@ -55,7 +56,8 @@ class Sequential(BaseEstimator, ClassifierMixin):
             self.__learn_epoch(xs, ys, epoch_no + 1)
 
             if validation_data is not None:
-                self.__perform_validation(validation_data)
+                val_xs, val_ys = validation_data
+                self.__validate(val_xs, val_ys)
 
     def predict(self, xs):
         self.__assert_build()
@@ -89,32 +91,17 @@ class Sequential(BaseEstimator, ClassifierMixin):
 
     def __learn_epoch(self, xs, ys, epoch_no):
         xs, ys = self.__shuffle(xs, ys)
-
-        # reset metrics
-        loss_rolling_avg = RollingAverage()
-        for metric in self.metrics:
-            metric.reset()
-
+        self.__reset_metrics()
         self.training = True
 
-        iterator = tqdm(enumerate(zip(xs, ys)), total=len(xs), desc=f'Epoch {epoch_no:<2}')
-        for i, (x, y) in iterator:
+        iterator = tqdm(zip(xs, ys), total=len(xs), desc=f'Epoch {epoch_no:<2}')
+        for x, y in iterator:
             prediction, loss = self.__learn_single(x, y)
-
-            # update metrics
-            loss_rolling_avg.update(loss)
-            for metric in self.metrics:
-                metric.update(np.array([y]), np.array([prediction]))
-
-            # show metrics
-            iterator.set_postfix_str(self.__get_metrics_string(loss=loss_rolling_avg.value))
+            self.__update_metrics(prediction, y)
+            iterator.set_postfix_str(self.__get_metrics_string())
 
         self.training = False
-
-        # add metrics to history
-        self._history['loss'].append(loss_rolling_avg.value)
-        for metric in self.metrics:
-            self._history[metric.NAME].append(metric.value)
+        self.__add_metrics_to_history()
 
     def __learn_single(self, x, y):
         prediction = self.__propagate(x)
@@ -138,31 +125,37 @@ class Sequential(BaseEstimator, ClassifierMixin):
             except Exception as e:
                 raise e from BackpropagationException(layer_no, layer)
 
-    def __perform_validation(self, validation_data):
-        val_xs, val_ys = validation_data
-
-        loss_rolling_avg = RollingAverage()
-        for metric in self.metrics:
-            metric.reset()
+    def __validate(self, val_xs, val_ys):
+        self.__reset_metrics()
 
         iterator = tqdm(zip(val_xs, val_ys), desc='Validate', total=len(val_xs))
         for x, y in iterator:
             prediction = self.__propagate(x)
-            loss = self.loss.call(prediction, y)
-            loss_rolling_avg.update(loss)
-            for metric in self.metrics:
-                metric.update(np.array([prediction]), np.array([y]))
+            self.__update_metrics(prediction, y)
+            iterator.set_postfix_str(self.__get_metrics_string(prefix='val_'))
 
-            iterator.set_postfix_str(self.__get_metrics_string(loss_rolling_avg.value, prefix='val_'))
+        self.__add_metrics_to_history(prefix='val_')
 
-        self._history['val_loss'].append(loss_rolling_avg.value)
+    def __reset_metrics(self):
+        self.loss_rolling_avg.reset()
         for metric in self.metrics:
-            self._history[f'val_{metric.NAME}'].append(metric.value)
+            metric.reset()
 
-    def __get_metrics_string(self, loss, prefix=''):
+    def __update_metrics(self, prediction, target):
+        loss = self.loss.call(prediction, target)
+        self.loss_rolling_avg.update(loss)
+        for metric in self.metrics:
+            metric.update(np.array([prediction]), np.array([target]))
+
+    def __get_metrics_string(self, prefix=''):
         parts = [f'{prefix}{metric.NAME}={metric.value:.4f}' for metric in self.metrics]
-        parts.insert(0, f'{prefix}loss={loss:.4f}')
+        parts.insert(0, f'{prefix}loss={self.loss_rolling_avg.value:.4f}')
         return ', '.join(parts)
+
+    def __add_metrics_to_history(self, prefix=''):
+        self._history[f'{prefix}loss'].append(self.loss_rolling_avg.value)
+        for metric in self.metrics:
+            self._history[f'{prefix}{metric.NAME}'].append(metric.value)
 
     def __assert_build(self):
         if not self.is_build:
