@@ -8,15 +8,16 @@ class Metric(ABC):
     NAME = None
 
     @abstractmethod
-    def reset_state(self):
+    def reset(self):
         pass
 
     @abstractmethod
-    def update_state(self, xs, ys):
+    def update(self, targets, predictions):
         pass
 
+    @property
     @abstractmethod
-    def result(self):
+    def value(self):
         pass
 
 
@@ -28,16 +29,17 @@ class CategoricalAccuracy(Metric):
         self.total = 0
         self.count = 0
 
-    def reset_state(self):
+    def reset(self):
         self.total = 0
         self.count = 0
 
-    def update_state(self, targets, predictions):
+    def update(self, targets, predictions):
         predicted_classes = np.argmax(predictions, axis=1)
         target_classes = np.argmax(targets, axis=1)
         correct_count = np.sum(predicted_classes == target_classes)
         self.total += correct_count
         self.count += len(targets)
 
-    def result(self):
-        return self.total / self.count if self.count > 0 else 0
+    @property
+    def value(self):
+        return self.total / self.count if self.count > 0.0 else 0.0

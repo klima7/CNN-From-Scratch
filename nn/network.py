@@ -20,7 +20,7 @@ class Sequential(BaseEstimator, ClassifierMixin):
         self.total_params_count = 0
         self.is_build = False
         self.metrics = []
-        self.__history = defaultdict(list)
+        self._history = defaultdict(list)
 
     @property
     def input_layer(self):
@@ -32,7 +32,7 @@ class Sequential(BaseEstimator, ClassifierMixin):
 
     @property
     def history(self):
-        return dict(self.__history)
+        return dict(self._history)
 
     def add(self, layer):
         self.layers.append(layer)
@@ -43,7 +43,7 @@ class Sequential(BaseEstimator, ClassifierMixin):
         self.metrics = [get_metric(metric) for metric in metrics]
         self.__connect_layers()
         self.total_params_count = sum([layer.params_count for layer in self.layers])
-        self.__history.clear()
+        self._history.clear()
         self.is_build = True
 
     def fit(self, xs, ys, epochs=1, learning_rate=0.001, validation_data=None):
@@ -53,7 +53,7 @@ class Sequential(BaseEstimator, ClassifierMixin):
 
         for epoch_no in range(self.epochs):
             loss = self.__learn_epoch(xs, ys, epoch_no + 1)
-            self.__history['loss'].append(loss)
+            self._history['loss'].append(loss)
 
             if validation_data is not None:
                 self.__perform_validation(validation_data)
@@ -90,14 +90,23 @@ class Sequential(BaseEstimator, ClassifierMixin):
 
     def __learn_epoch(self, xs, ys, epoch_no):
         xs, ys = self.__shuffle(xs, ys)
+
         loss_rolling_avg = RollingAverage()
+        for metric in self.metrics:
+            metric.reset()
 
         self.training = True
+
         iterator = tqdm(enumerate(zip(xs, ys)), total=len(xs), desc=f'Epoch {epoch_no:<2}')
         for i, (x, y) in iterator:
-            loss = self.__learn_single(x, y)
+            prediction, loss = self.__learn_single(x, y)
+
             loss_rolling_avg.update(loss)
-            iterator.set_postfix_str(f'loss={loss_rolling_avg.value:.4f}')
+            for metric in self.metrics:
+                metric.update(np.array([y]), np.array([prediction]))
+
+            iterator.set_postfix_str(self.__get_metrics_string(loss=loss_rolling_avg.value))
+
         self.training = False
 
         return loss_rolling_avg.value
@@ -107,7 +116,7 @@ class Sequential(BaseEstimator, ClassifierMixin):
         loss = self.loss.call(prediction, y)
         delta = self.loss.deriv(prediction, y)
         self.__backpropagate(delta)
-        return loss
+        return prediction, loss
 
     def __propagate(self, x):
         for layer_no, layer in enumerate(self.layers):
@@ -131,7 +140,7 @@ class Sequential(BaseEstimator, ClassifierMixin):
 
         metrics_results = self.__calculate_metrics(predictions, val_ys)
         for metric_name, metric_value in metrics_results.items():
-            self.__history[metric_name].append(metric_value)
+            self._history[metric_name].append(metric_value)
 
         tqdm(
             [],
@@ -152,13 +161,10 @@ class Sequential(BaseEstimator, ClassifierMixin):
 
         return metrics_result
 
-    @staticmethod
-    def __cvt_metrics_results_to_string(metrics_results):
-        text = ''
-        for metric_name, metric_value in metrics_results.items():
-            part = f'{metric_name}={metric_value:.4f}, '
-            text += part
-        return text[:-2]
+    def __get_metrics_string(self, loss, prefix=''):
+        parts = [f'{prefix}{metric.NAME}={metric.value:.4f}' for metric in self.metrics]
+        parts.insert(0, f'{prefix}loss={loss:.4f}')
+        return ', '.join(parts)
 
     def __assert_build(self):
         if not self.is_build:
