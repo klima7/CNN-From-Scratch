@@ -25,9 +25,24 @@ class Conv2DLayer(Layer):
         self.use_bias = use_bias
         self.kernel_initializer = get_initializer(kernel_initializer)
         self.bias_initializer = get_initializer(bias_initializer)
-        self.kernels = None
-        self.biases = None
+        self.all_weights = [None, None]
         self.__x = None
+
+    @property
+    def kernels(self):
+        return self.all_weights[0]
+
+    @kernels.setter
+    def kernels(self, value):
+        self.all_weights[0] = value
+
+    @property
+    def biases(self):
+        return self.all_weights[1]
+
+    @biases.setter
+    def biases(self, value):
+        self.all_weights[1] = value
 
     @property
     def input_slices_count(self):
@@ -58,12 +73,10 @@ class Conv2DLayer(Layer):
 
         kernels_shape = (self.filters_count, *self.kernel_size, self.input_slices_count)
         self.kernels = self.kernel_initializer(kernels_shape, **initializer_kwargs)
-        self.params_count = self.kernels.size
 
         if self.use_bias:
             biases_shape = (self.filters_count,)
             self.biases = self.bias_initializer(biases_shape, **initializer_kwargs)
-            self.params_count += self.biases.size
 
     def validate_input_shape(self):
         if len(self.input_shape) != 3:

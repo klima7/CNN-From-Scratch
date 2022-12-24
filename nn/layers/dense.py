@@ -9,8 +9,16 @@ class DenseLayer(Layer):
         super().__init__()
         self.neurons_count = neurons_count
         self.initializer = get_initializer(initializer)
-        self.weights = None
+        self.all_weights = [None]
         self.__x = None
+
+    @property
+    def weights(self):
+        return self.all_weights[0]
+
+    @weights.setter
+    def weights(self, value):
+        self.all_weights[0] = value
 
     def validate_input_shape(self):
         if len(self.input_shape) != 1:
@@ -26,7 +34,6 @@ class DenseLayer(Layer):
             'fan_out': self.output_shape[0]
         }
         self.weights = self.initializer(shape, **initializer_kwargs)
-        self.params_count = self.weights.size
 
     def propagate(self, x):
         self.__x = x

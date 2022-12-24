@@ -7,7 +7,15 @@ class BiasLayer(Layer):
     def __init__(self, initializer='constant'):
         super().__init__()
         self.initializer = get_initializer(initializer)
-        self.bias = None
+        self.all_weights = [None]
+
+    @property
+    def bias(self):
+        return self.all_weights[0]
+
+    @bias.setter
+    def bias(self, value):
+        self.all_weights[0] = value
 
     def get_output_shape(self):
         return self.input_shape
@@ -18,7 +26,6 @@ class BiasLayer(Layer):
             'fan_out': self.output_shape[0]
         }
         self.bias = self.initializer(self.input_shape, **initializer_kwargs)
-        self.params_count = self.bias.size
 
     def propagate(self, x):
         return x + self.bias
