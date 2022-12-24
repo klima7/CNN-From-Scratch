@@ -92,7 +92,7 @@ class Sequential(BaseEstimator, ClassifierMixin):
             input_text = f'{tuple(layer.input_shape)}' if self.is_compiled else '?'
             output_text = f'{tuple(layer.output_shape)}' if self.is_compiled else '?'
             print(f'{index:<4} | {name_text:<20} | {params_text:<10} | {input_text:<15} | {output_text:<15}')
-        total_params_text = str(self.total_params_count) if self.is_compiled else '?'
+        total_params_text = f'{self.total_params_count:,}' if self.is_compiled else '?'
         print(f'\nTotal parameters count: {total_params_text}')
 
     def save(self, path):
