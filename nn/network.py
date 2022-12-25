@@ -85,6 +85,7 @@ class Sequential(BaseEstimator, ClassifierMixin):
                 break
 
         self.__call_callbacks('on_train_end')
+        return self.history
 
     def predict(self, xs):
         self.__assert_compiled()
