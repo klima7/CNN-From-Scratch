@@ -3,4 +3,5 @@
 data/**
 **.prof
 scratches/**
-*.dat
+saved_models/**
+!saved_models/.gitkeep
