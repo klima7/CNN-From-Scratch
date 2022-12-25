@@ -55,21 +55,22 @@ class Sequential(BaseEstimator, ClassifierMixin):
         self.layers.append(layer)
         self.is_compiled = False
 
-    def compile(self, loss='mse', metrics=(), callbacks=()):
+    def compile(self, loss='mse', metrics=()):
         self.loss = get_loss(loss)
         self.metrics = [get_metric(metric) for metric in metrics]
         self.__connect_layers()
-        self.callbacks = callbacks
-        for callback in self.callbacks:
-            callback.set_model(self)
         self._history.clear()
         self.is_compiled = True
 
-    def fit(self, xs, ys, epochs=1, learning_rate=0.001, validation_data=None):
+    def fit(self, xs, ys, epochs=1, learning_rate=0.001, validation_data=None, callbacks=()):
         self.__assert_compiled()
         self.epochs = epochs
         self.learning_rate = learning_rate
         self.stop_training = False
+
+        self.callbacks = callbacks
+        for callback in self.callbacks:
+            callback.set_model(self)
         self.__call_callbacks('on_train_begin')
 
         for epoch_no in range(self.epochs):
