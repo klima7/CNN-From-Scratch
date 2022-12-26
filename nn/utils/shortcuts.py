@@ -44,7 +44,7 @@ def get_metric(metric):
 def _get_activation_from_name(name):
     activations_dict = {
         'no': activations.NoActivation,
-        'logistic': activations.LogisticActivation,
+        'sigmoid': activations.SigmoidActivation,
         'relu': activations.ReLuActivation,
         'leaky_relu': activations.LeakyReLuActivation,
         'tanh': activations.TanhActivation,

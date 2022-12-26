@@ -27,7 +27,7 @@ class NoActivation(Activation):
         return np.ones_like(x)
 
 
-class LogisticActivation(Activation):
+class SigmoidActivation(Activation):
 
     def call(self, x):
         return expit(x)
