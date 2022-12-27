@@ -1,5 +1,5 @@
 # CNN From Scratch
-Convolutional Neural Network written from scratch using numpy with API similar to tensorflow
+Convolutional Neural Network written from scratch using numpy with API similar to tensorflow. Library was compared with tensorflow versions of network (`demo` directory) and achieved very close results.
 
 ## Implemented Elements
 
