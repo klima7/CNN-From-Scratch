@@ -63,6 +63,8 @@ class Sequential(BaseEstimator, ClassifierMixin):
         self.is_compiled = True
 
     def fit(self, xs, ys, epochs=1, learning_rate=0.001, validation_data=None, callbacks=()):
+        xs, ys, = xs.astype(np.float64), ys.astype(np.float64)  # using numba requires such unification
+
         self.__assert_compiled()
         self.epochs = epochs
         self.learning_rate = learning_rate
@@ -89,6 +91,7 @@ class Sequential(BaseEstimator, ClassifierMixin):
         return self.history
 
     def predict(self, xs):
+        xs = xs.astype(np.float64)     # using numba requires such unification
         self.__assert_compiled()
         iterator = tqdm(xs, desc='Predict', total=len(xs))
         predictions = [self.__propagate(x) for x in iterator]
