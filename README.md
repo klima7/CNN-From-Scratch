@@ -75,3 +75,8 @@ history = model.fit(
     callbacks=[checkpoint_callback],
 )
 ```
+
+### Predicting
+```
+predictions = model.predict(test_x)
+```
