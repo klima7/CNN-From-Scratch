@@ -69,7 +69,7 @@ checkpoint_callback = nnumpy.callbacks.ModelCheckpoint('checkpoint.dat')
 history = model.fit(
     train_x,
     train_y,
-    validation_data=(test_x], test_y),
+    validation_data=(test_x, test_y),
     learning_rate=0.001,
     epochs=10,
     callbacks=[checkpoint_callback],
