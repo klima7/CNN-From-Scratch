@@ -1,5 +1,8 @@
 **/__pycache__/**
 .idea/
+dist/**
+build/**
+nnumpy.egg-info/**
 data/**
 **.prof
 scratches/**

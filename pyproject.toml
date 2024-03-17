@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nnumpy"
+version = "0.1.0"
+authors = [
+  { name="Łukasz Klimkiewicz", email="pypi@mail.ukasz.com" },
+]
+description = "Simple neural network implementation with numpy"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/klima7/CNN-From-Scratch"
+Issues = "https://github.com/klima7/CNN-From-Scratch/issues"
