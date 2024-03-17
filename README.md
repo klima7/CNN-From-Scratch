@@ -1,4 +1,4 @@
-# CNN From Scratch
+# Nnumpy
 Convolutional Neural Network written from scratch using numpy with API similar to tensorflow. Library was compared with tensorflow versions of network (`demo` directory) and achieved very close results.
 
 ## Implemented Elements
@@ -38,20 +38,20 @@ Convolutional Neural Network written from scratch using numpy with API similar t
 ### Definition
 ```
 layers = [
-    nn.layers.InputLayer((28, 28, 1)),
-    nn.layers.Conv2DLayer(32, kernel_size=3, stride=1),
-    nn.layers.ActivationLayer('relu'),
-    nn.layers.FlattenLayer(),
-    nn.layers.DenseLayer(128),
-    nn.layers.BiasLayer(),
-    nn.layers.ActivationLayer('relu'),
-    nn.layers.DropoutLayer(0.5),
-    nn.layers.DenseLayer(10),
-    nn.layers.BiasLayer(),
-    nn.layers.SoftmaxLayer(),
+    nnumpy.layers.InputLayer((28, 28, 1)),
+    nnumpy.layers.Conv2DLayer(32, kernel_size=3, stride=1),
+    nnumpy.layers.ActivationLayer('relu'),
+    nnumpy.layers.FlattenLayer(),
+    nnumpy.layers.DenseLayer(128),
+    nnumpy.layers.BiasLayer(),
+    nnumpy.layers.ActivationLayer('relu'),
+    nnumpy.layers.DropoutLayer(0.5),
+    nnumpy.layers.DenseLayer(10),
+    nnumpy.layers.BiasLayer(),
+    nnumpy.layers.SoftmaxLayer(),
 ]
 
-model = nn.network.Sequential(layers)
+model = nnumpy.network.Sequential(layers)
 ```
 
 ### Compilation
@@ -64,7 +64,7 @@ model.compile(
 
 ### Fitting
 ```
-checkpoint_callback = nn.callbacks.ModelCheckpoint('checkpoint.dat')
+checkpoint_callback = nnumpy.callbacks.ModelCheckpoint('checkpoint.dat')
 
 history = model.fit(
     train_x,

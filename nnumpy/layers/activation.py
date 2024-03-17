@@ -1,5 +1,5 @@
 from .base import Layer
-from nn.utils.shortcuts import get_activation
+from nnumpy.utils.shortcuts import get_activation
 
 
 class ActivationLayer(Layer):
