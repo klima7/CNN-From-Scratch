@@ -2,7 +2,7 @@
 .idea/
 dist/**
 build/**
-nnumpy.egg-info/**
+numpynet.egg-info/**
 data/**
 **.prof
 scratches/**
